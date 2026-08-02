@@ -1,6 +1,5 @@
 // vite.config.js
 import { defineConfig } from 'vite'
-import dts from 'vite-plugin-dts'
 export default defineConfig({
     build: {
         lib: {
@@ -14,11 +13,13 @@ export default defineConfig({
         },
         sourcemap: true,
         outDir: 'dist',
+        // tsc runs first and writes the .d.ts files into dist/; don't let vite wipe them out.
+        emptyOutDir: false,
         rollupOptions: {
             // External packages that should not be bundled into your library.
             external: ['zod'],
         },
         copyPublicDir: false,
     },
-    plugins: [dts({ tsconfigPath: 'tsconfig.json' })],
+    plugins: [],
 })

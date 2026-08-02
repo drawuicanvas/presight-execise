@@ -1,0 +1,29 @@
+# git
+.git/
+.gitignore
+
+# dependencies (installed fresh inside the image)
+**/node_modules/
+
+# build output (regenerated inside the image)
+**/dist/
+**/build/
+**/*.tsbuildinfo
+**/.vite/
+
+# local seed data (regenerate via `pnpm --filter=@presight/server data:create-fresh`)
+apps/server/data/
+apps/server/user_data.csv
+
+# env / secrets
+.env
+.env.*
+!apps/server/.env.example
+
+# editor / OS
+.vscode/
+.DS_Store
+
+# docker itself
+Dockerfile
+.dockerignore

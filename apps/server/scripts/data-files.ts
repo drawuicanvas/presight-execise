@@ -7,26 +7,43 @@ export const CSV_FILE = new URL('../user_data.csv', import.meta.url)
 export const DB_DIR = new URL('../data/', import.meta.url)
 export const DB_FILE = new URL('user_data.db', DB_DIR)
 
-export const CSV_HEADER = [
-    'id',
-    'avatar',
-    'first_name',
-    'last_name',
-    'age',
-    'nationality_code',
-    'hobbies',
-] as const
+export const CSV_HEADER = ['id', 'avatar', 'first_name', 'last_name', 'age', 'nationality_code', 'hobbies'] as const
 
 /** Hobbies are a multi-value column, joined with this separator inside one CSV field. */
 export const HOBBY_SEPARATOR = '|'
 
 /** Reference list of hobbies. Seeded in full into the `hobbies` table. */
 export const HOBBIES = [
-    'Reading', 'Writing', 'Painting', 'Photography', 'Cooking', 'Baking',
-    'Gardening', 'Hiking', 'Cycling', 'Running', 'Swimming', 'Yoga', 'Chess',
-    'Gaming', 'Guitar', 'Piano', 'Singing', 'Dancing', 'Woodworking', 'Pottery',
-    'Knitting', 'Fishing', 'Camping', 'Traveling', 'Birdwatching', 'Astronomy',
-    'Calligraphy', 'Origami', 'Surfing', 'Skiing',
+    'Reading',
+    'Writing',
+    'Painting',
+    'Photography',
+    'Cooking',
+    'Baking',
+    'Gardening',
+    'Hiking',
+    'Cycling',
+    'Running',
+    'Swimming',
+    'Yoga',
+    'Chess',
+    'Gaming',
+    'Guitar',
+    'Piano',
+    'Singing',
+    'Dancing',
+    'Woodworking',
+    'Pottery',
+    'Knitting',
+    'Fishing',
+    'Camping',
+    'Traveling',
+    'Birdwatching',
+    'Astronomy',
+    'Calligraphy',
+    'Origami',
+    'Surfing',
+    'Skiing',
 ]
 
 /** Reference list of nationalities (ISO 3166-1 alpha-2 code -> display label). Seeded in full into the `nationalities` table. */

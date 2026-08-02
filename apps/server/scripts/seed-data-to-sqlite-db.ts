@@ -105,9 +105,7 @@ function randomId(): string {
 }
 
 // Seed the full reference tables, independent of what ends up used by generated users.
-const insertNationality = db.prepare(
-    'INSERT INTO nationalities (code, label) VALUES (?, ?)',
-)
+const insertNationality = db.prepare('INSERT INTO nationalities (code, label) VALUES (?, ?)')
 for (const { code, label } of NATIONALITIES) {
     insertNationality.run(code, label)
 }
@@ -127,9 +125,7 @@ for (const label of HOBBIES) {
 const insertUser = db.prepare(
     'INSERT INTO users (id, avatar, first_name, last_name, age, nationality_code) VALUES (?, ?, ?, ?, ?, ?)',
 )
-const insertUserHobby = db.prepare(
-    'INSERT INTO user_hobbies (user_id, hobby_id) VALUES (?, ?)',
-)
+const insertUserHobby = db.prepare('INSERT INTO user_hobbies (user_id, hobby_id) VALUES (?, ?)')
 
 db.exec('BEGIN')
 let hobbyCount = 0
