@@ -14,16 +14,3 @@ export const userSchema = z.object({
 })
 
 export type User = z.infer<typeof userSchema>
-
-/** Shape of a single row in the seed CSV (hobbies are pipe separated). */
-export const userCsvRowSchema = z.object({
-    id: z.string().min(1),
-    avatar: z.string().min(1),
-    first_name: z.string().min(1),
-    last_name: z.string().min(1),
-    age: z.coerce.number().int().min(0).max(120),
-    nationality: z.string().min(1),
-    hobbies: z.string(),
-})
-
-export type UserCsvRow = z.infer<typeof userCsvRowSchema>
