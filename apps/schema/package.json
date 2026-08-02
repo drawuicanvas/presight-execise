@@ -4,9 +4,21 @@
     "private": true,
     "type": "module",
     "exports": {
-        ".": {
-            "import": "./dist/index.js",
-            "types": "./dist/index.d.ts"
+        "./user": {
+            "import": "./dist/user.js",
+            "types": "./dist/user.d.ts"
+        },
+        "./hobby": {
+            "import": "./dist/hobby.js",
+            "types": "./dist/hobby.d.ts"
+        },
+        "./nationality": {
+            "import": "./dist/nationality.js",
+            "types": "./dist/nationality.d.ts"
+        },
+        "./user-hobby": {
+            "import": "./dist/user-hobby.js",
+            "types": "./dist/user-hobby.d.ts"
         }
     },
     "scripts": {
