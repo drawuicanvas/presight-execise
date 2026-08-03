@@ -48,12 +48,20 @@ build time.
 ## Quick start
 
 ```bash
-docker compose up --build
+# first time (or after changing code) — builds the images, then starts detached
+docker compose up --build -d
+
+# subsequent times — reuses the existing images, starts detached
+docker compose up -d
 ```
 
 - Client → <http://localhost:8086>
 - API through the proxy → <http://localhost:8086/api/hobbies>
 - API directly (debugging only) → <http://localhost:3030>
+
+Dropping `-d` runs attached instead, streaming both containers' logs until you stop it with
+`Ctrl+C` — useful while debugging, but it blocks the terminal. With `-d`, use
+`docker compose logs -f` to reattach to the logs on demand.
 
 Tear down with `docker compose down`.
 

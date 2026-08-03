@@ -161,3 +161,49 @@
         transform: rotate(360deg);
     }
 }
+
+// Positioning context for the loading overlay. The list itself scrolls with the window
+// (Virtuoso useWindowScroll), so this can be tall — see .overlayPanel for how the message
+// stays on screen regardless.
+.host {
+    position: relative;
+}
+
+.overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    justify-content: center;
+    // Dims whatever is underneath — stale results or skeletons — without hiding it, so the user
+    // keeps their place instead of watching the list disappear.
+    background: rgba(19, 17, 24, 0.62);
+    backdrop-filter: blur(1px);
+    // Clicks land on the backdrop rather than on rows that are about to be replaced.
+    cursor: progress;
+}
+
+.overlayPanel {
+    // Sticky, not centred: the overlay spans the full list height, which can be many screens.
+    // Centring would park the message off-screen; this keeps it just below the top of the
+    // viewport however far down the user has scrolled.
+    position: sticky;
+    top: 40px;
+    align-self: flex-start;
+    height: fit-content;
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    background: var(--c-popover);
+    border: 1px solid rgba(255, 212, 0, 0.45);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55);
+    transform: var(--skew);
+
+    font: 800 11px var(--font);
+    font-style: italic;
+    letter-spacing: 2px;
+    color: var(--c-yellow);
+    white-space: nowrap;
+}

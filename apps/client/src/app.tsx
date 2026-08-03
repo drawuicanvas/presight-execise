@@ -117,11 +117,12 @@ export function App() {
                         accent="yellow"
                     />
                 </aside>
-                <main className={styles.list} data-pending={usersQuery.isPlaceholderData || undefined}>
+                <main className={styles.list}>
                     <UserList
                         users={users}
                         total={firstPage?.pagination.total}
                         isLoading={usersQuery.isLoading}
+                        isRefreshing={usersQuery.isPlaceholderData}
                         isError={usersQuery.isError}
                         isFetchingNextPage={usersQuery.isFetchingNextPage}
                         hasNextPage={usersQuery.hasNextPage}

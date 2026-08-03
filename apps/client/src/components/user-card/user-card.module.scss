@@ -132,4 +132,31 @@
     color: #fff;
     font: 800 10px var(--font);
     transform: var(--skew);
+    // Signals that hovering does something — it reveals the remaining hobbies.
+    cursor: pointer;
+
+    &:focus-visible {
+        outline: 2px solid var(--c-yellow);
+        outline-offset: 2px;
+    }
+}
+
+.tooltip {
+    // Required. `position` normally comes from Mantine's Tooltip.css, which
+    // HeadlessMantineProvider never loads; without it the panel is static and falls to the end of
+    // <body>. Must stay in sync with the Tooltip's floatingStrategy.
+    position: fixed;
+    z-index: 60;
+    max-width: 240px;
+    padding: 8px 11px;
+    background: var(--c-popover);
+    border: 1px solid rgba(255, 46, 136, 0.5);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
+    color: var(--c-text);
+    font: 700 10px var(--font);
+    letter-spacing: 1px;
+    line-height: 1.6;
+    // Mantine's `multiline` styles are part of the same unloaded CSS, so wrap it here instead.
+    white-space: normal;
+    pointer-events: none;
 }

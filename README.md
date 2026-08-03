@@ -7,6 +7,27 @@ For running the production images, see **[docs/DOCKER.md](docs/DOCKER.md)**.
 
 ---
 
+## Quick start with Docker
+
+No Node or pnpm needed locally — just Docker. The database is baked into the image, seeded from
+the committed `user_data.csv`, so there's nothing else to set up.
+
+```bash
+# first time (or after changing code) — builds the images, then starts detached
+docker compose up --build -d
+
+# subsequent times — reuses the existing images, starts detached
+docker compose up -d
+```
+
+Open <http://localhost:8086> to view the app. Tear down with `docker compose down`.
+
+`-d` runs detached so the command returns immediately instead of blocking your terminal streaming
+logs; use `docker compose logs -f` to reattach to them. See [docs/DOCKER.md](docs/DOCKER.md) for
+port overrides, the two image targets, and how the client talks to the API.
+
+---
+
 ## Requirements
 
 | Tool | Version    | Notes                                                           |
