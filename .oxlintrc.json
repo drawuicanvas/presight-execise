@@ -12,7 +12,10 @@
     "ignorePatterns": ["**/dist/**", "**/node_modules/**", "**/*.tsbuildinfo"],
     "rules": {
         "no-console": "off",
-        "typescript/consistent-type-imports": "error"
+        "typescript/consistent-type-imports": "error",
+        "react/react-in-jsx-scope": "off",
+        "import/no-unassigned-import": "off",
+        "react/no-unstable-nested-components": ["warn", { "allowAsProps": true }]
     },
     "overrides": [
         {

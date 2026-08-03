@@ -1,33 +1,28 @@
-export interface User {
-  id: string;
-  firstName: string;
-  lastName: string;
-  nationality: string;
-  age: number;
-  hobbies: string[];
-  avatarHue: number;
-}
+import type { Hobby, Nationality, SortDirection, UserSortField } from '@presight/schema'
 
-export type SortField = 'first_name' | 'last_name' | 'age' | 'nationality';
-export type SortDir = 'asc' | 'desc';
-
+/**
+ * UI filter state. Hobbies and nationalities are held as the identifiers the API expects
+ * (`hobby_id` / `nationality_code`), never as labels, so a selection stays valid no matter how the
+ * value happens to be displayed.
+ */
 export interface UserFilters {
-  search: string;
-  hobbies: string[];
-  nationalities: string[];
-  sortField: SortField;
-  sortDir: SortDir;
+    search: string
+    hobbyIds: string[]
+    nationalityCodes: string[]
+    sortField: UserSortField
+    sortDir: SortDirection
 }
 
-export interface FacetCount {
-  name: string;
-  count: number;
+/** Schema entities reduced to what the pickers render: a stable identifier plus a display label. */
+export interface FacetOption {
+    value: string
+    label: string
 }
 
-export interface UsersPage {
-  users: User[];
-  nextPage: number | null;
-  total: number;
-  hobbyFacets: FacetCount[];       // top 20 for the CURRENT result set
-  nationalityFacets: FacetCount[]; // top 20 for the CURRENT result set
+export function toHobbyOption(hobby: Hobby): FacetOption {
+    return { value: hobby.id, label: hobby.label }
+}
+
+export function toNationalityOption(nationality: Nationality): FacetOption {
+    return { value: nationality.code, label: nationality.label }
 }

@@ -1,61 +1,64 @@
-// Mock API layer — swap the bodies of these three functions with real fetch calls.
-// Signatures are already shaped for TanStack Query (useQuery / useInfiniteQuery).
-import { ALL_USERS, HOBBIES, NATIONALITIES } from './mock-data';
-import type { FacetCount, SortField, User, UserFilters, UsersPage } from './types';
+// Real API layer. Every response is parsed with the shared zod schemas, so contract drift surfaces
+// here as a thrown error instead of as `undefined` somewhere deep in the tree.
+import {
+    type Hobby,
+    hobbyListSchema,
+    MAX_PAGE_SIZE,
+    type Nationality,
+    nationalityListSchema,
+    type UserSearchResult,
+    userSearchResultSchema,
+} from '@presight/schema'
+import type { UserFilters } from './types'
 
-export const PAGE_SIZE = 40;
+/** The API server is called directly, so it must allow this origin (see the server's CORS_ORIGIN). */
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000'
 
-const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+export const PAGE_SIZE = Math.min(40, MAX_PAGE_SIZE)
 
-function topFacets(rows: User[], getValues: (u: User) => string[]): FacetCount[] {
-  const m = new Map<string, number>();
-  for (const u of rows) for (const v of getValues(u)) m.set(v, (m.get(v) ?? 0) + 1);
-  return [...m.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 20)
-    .map(([name, count]) => ({ name, count }));
+async function getJson(path: string): Promise<unknown> {
+    const response = await fetch(`${API_BASE}${path}`)
+    if (!response.ok) {
+        throw new Error(`GET ${path} failed: ${response.status} ${response.statusText}`)
+    }
+    return response.json()
 }
 
-/** GET /api/hobbies — predefined list for the combobox */
-export async function fetchHobbies(): Promise<string[]> {
-  await delay(300);
-  return HOBBIES;
+/** `GET /hobbies` — the full reference list backing the hobby picker. */
+export async function fetchHobbies(): Promise<Hobby[]> {
+    return hobbyListSchema.parse(await getJson('/hobbies'))
 }
 
-/** GET /api/nationalities — predefined list for the combobox */
-export async function fetchNationalities(): Promise<string[]> {
-  await delay(300);
-  return NATIONALITIES;
+/** `GET /nationalities` — the full reference list backing the nationality picker. */
+export async function fetchNationalities(): Promise<Nationality[]> {
+    return nationalityListSchema.parse(await getJson('/nationalities'))
 }
 
-/** GET /api/users?page=&search=&hobbies=&nationalities=&sort=&dir= */
-export async function fetchUsers(filters: UserFilters, page: number): Promise<UsersPage> {
-  await delay(550);
-  const q = filters.search.trim().toLowerCase();
-  let rows = ALL_USERS.filter(
-    (u) =>
-      (!q || u.firstName.toLowerCase().includes(q) || u.lastName.toLowerCase().includes(q)) &&
-      (!filters.hobbies.length || u.hobbies.some((h) => filters.hobbies.includes(h))) &&
-      (!filters.nationalities.length || filters.nationalities.includes(u.nationality)),
-  );
-  const dir = filters.sortDir === 'asc' ? 1 : -1;
-  const key: Record<SortField, (u: User) => string | number> = {
-    first_name: (u) => u.firstName,
-    last_name: (u) => u.lastName,
-    age: (u) => u.age,
-    nationality: (u) => u.nationality,
-  };
-  const k = key[filters.sortField];
-  rows = [...rows].sort((a, b) => {
-    const x = k(a), y = k(b);
-    return (x < y ? -1 : x > y ? 1 : 0) * dir;
-  });
-  const start = page * PAGE_SIZE;
-  return {
-    users: rows.slice(start, start + PAGE_SIZE),
-    nextPage: start + PAGE_SIZE < rows.length ? page + 1 : null,
-    total: rows.length,
-    hobbyFacets: topFacets(rows, (u) => u.hobbies),
-    nationalityFacets: topFacets(rows, (u) => [u.nationality]),
-  };
+/**
+ * `GET /users` — one page of results plus the facet counts for the current filter state.
+ * The single search box is sent as both `first_name` and `last_name`; the server OR-s them.
+ */
+export async function fetchUsers(filters: UserFilters, offset: number): Promise<UserSearchResult> {
+    const params = new URLSearchParams()
+
+    const search = filters.search.trim()
+    if (search) {
+        params.set('first_name', search)
+        params.set('last_name', search)
+    }
+    if (filters.hobbyIds.length > 0) params.set('hobby_id', filters.hobbyIds.join(','))
+    if (filters.nationalityCodes.length > 0) params.set('nationality_code', filters.nationalityCodes.join(','))
+
+    params.set('orderby', filters.sortField)
+    params.set('sort', filters.sortDir)
+    params.set('offset', String(offset))
+    params.set('pagesize', String(PAGE_SIZE))
+
+    return userSearchResultSchema.parse(await getJson(`/users?${params}`))
+}
+
+/** Offset of the next page for `useInfiniteQuery`, or `undefined` once the last page is loaded. */
+export function nextPageOffset(page: UserSearchResult): number | undefined {
+    const { offset, pagesize, has_more } = page.pagination
+    return has_more ? offset + pagesize : undefined
 }

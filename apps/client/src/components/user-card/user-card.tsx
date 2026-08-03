@@ -1,8 +1,8 @@
-import type { User } from '../../api/types';
-import styles from './user-card.module.scss';
+import type { UserSearchItem } from '@presight/schema'
+import styles from './user-card.module.scss'
 
 interface UserCardProps {
-  user: User;
+    user: UserSearchItem
 }
 
 /**
@@ -13,34 +13,28 @@ interface UserCardProps {
  * |----------------------------------|
  */
 export function UserCard({ user }: UserCardProps) {
-  const [h1, h2] = user.hobbies;
-  const extra = Math.max(0, user.hobbies.length - 2);
-  return (
-    <article className={styles.card}>
-      <div
-        className={styles.avatar}
-        style={{ background: `hsl(${user.avatarHue}, 85%, 62%)` }}
-        aria-hidden
-      >
-        {user.firstName[0]}
-        {user.lastName[0]}
-      </div>
-      <div className={styles.body}>
-        <div className={styles.line}>
-          <span className={styles.name}>
-            {user.firstName} {user.lastName}
-          </span>
-          <span className={styles.age}>{user.age}</span>
-        </div>
-        <div className={styles.line}>
-          <span className={styles.nationality}>{user.nationality.toUpperCase()}</span>
-          <span className={styles.hobbies}>
-            {h1 && <span className={styles.hobby}>{h1.toUpperCase()}</span>}
-            {h2 && <span className={styles.hobby}>{h2.toUpperCase()}</span>}
-            {extra > 0 && <span className={styles.extra}>+{extra}</span>}
-          </span>
-        </div>
-      </div>
-    </article>
-  );
+    const [first, second] = user.hobbies
+    const extra = Math.max(0, user.hobbies.length - 2)
+
+    return (
+        <article className={styles.card}>
+            <img className={styles.avatar} src={user.avatar} alt="" loading="lazy" decoding="async" />
+            <div className={styles.body}>
+                <div className={styles.line}>
+                    <span className={styles.name}>
+                        {user.first_name} {user.last_name}
+                    </span>
+                    <span className={styles.age}>{user.age}</span>
+                </div>
+                <div className={styles.line}>
+                    <span className={styles.nationality}>{user.nationality_label.toUpperCase()}</span>
+                    <span className={styles.hobbies}>
+                        {first && <span className={styles.hobby}>{first.label.toUpperCase()}</span>}
+                        {second && <span className={styles.hobby}>{second.label.toUpperCase()}</span>}
+                        {extra > 0 && <span className={styles.extra}>+{extra}</span>}
+                    </span>
+                </div>
+            </div>
+        </article>
+    )
 }

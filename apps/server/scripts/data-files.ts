@@ -1,11 +1,16 @@
+import { env } from '../src/env.ts'
+
 /** Shared locations/format of the generated seed data. */
 
 /** CSV seed file, kept at the server package root. */
 export const CSV_FILE = new URL('../user_data.csv', import.meta.url)
 
-/** SQLite database built from the CSV. */
-export const DB_DIR = new URL('../data/', import.meta.url)
-export const DB_FILE = new URL('user_data.db', DB_DIR)
+/** Package root, so `DATABASE_FILE` can stay a path relative to it (as in `.env.example`). */
+const PACKAGE_ROOT = new URL('../', import.meta.url)
+
+/** SQLite database built from the CSV, at the path configured by `DATABASE_FILE` (see `env.ts`). */
+export const DB_FILE = new URL(env.databaseFile, PACKAGE_ROOT)
+export const DB_DIR = new URL('.', DB_FILE)
 
 export const CSV_HEADER = ['id', 'avatar', 'first_name', 'last_name', 'age', 'nationality_code', 'hobbies'] as const
 

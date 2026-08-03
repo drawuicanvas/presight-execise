@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { hobbySchema } from './hobby'
 import { userSchema } from './user'
 
 /** Fields `GET /users` can be sorted by. `nationality` sorts on the display label, not the code. */
@@ -47,9 +48,13 @@ export const userSearchQuerySchema = z.object({
 
 export type UserSearchQuery = z.infer<typeof userSearchQuerySchema>
 
-/** A user row as returned by `GET /users`, denormalised with the nationality label for display. */
+/**
+ * A user row as returned by `GET /users`, denormalised for display: the nationality label saves the
+ * client a lookup, and `hobbies` carries the user's own hobbies (not the selected filters).
+ */
 export const userSearchItemSchema = userSchema.extend({
     nationality_label: z.string().min(1),
+    hobbies: z.array(hobbySchema),
 })
 
 export type UserSearchItem = z.infer<typeof userSearchItemSchema>

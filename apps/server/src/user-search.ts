@@ -3,6 +3,8 @@ import { z } from 'zod'
 import {
     type FacetValue,
     facetValueSchema,
+    type Hobby,
+    hobbySchema,
     TOP_FACET_LIMIT,
     type UserSearchItem,
     userSearchItemSchema,
@@ -82,6 +84,36 @@ function buildWhere(query: UserSearchQuery): WhereClause {
     }
 }
 
+const userRowSchema = userSearchItemSchema.omit({ hobbies: true })
+const hobbyRowSchema = hobbySchema.extend({ user_id: z.string().min(1) })
+
+/**
+ * Hobbies of the users on the current page, in one round trip rather than one query per row.
+ * Users with no hobbies simply get no entry, so callers must fall back to an empty list.
+ */
+function hobbiesByUser(userIds: string[]): Map<string, Hobby[]> {
+    const byUser = new Map<string, Hobby[]>()
+    if (userIds.length === 0) return byUser
+
+    const rows = db
+        .prepare(`
+            SELECT uh.user_id AS user_id, h.id AS id, h.label AS label
+            FROM user_hobbies uh
+            JOIN hobbies h ON h.id = uh.hobby_id
+            WHERE uh.user_id IN (${placeholders(userIds.length)})
+            ORDER BY h.label
+        `)
+        .all(...userIds)
+
+    for (const { user_id, ...hobby } of z.array(hobbyRowSchema).parse(rows)) {
+        const existing = byUser.get(user_id)
+        if (existing) existing.push(hobby)
+        else byUser.set(user_id, [hobby])
+    }
+
+    return byUser
+}
+
 function selectPage(query: UserSearchQuery, where: WhereClause): UserSearchItem[] {
     const direction = query.sort === 'desc' ? 'DESC' : 'ASC'
     // `u.id` breaks ties so the ordering is total: no user is repeated or skipped across pages.
@@ -98,7 +130,15 @@ function selectPage(query: UserSearchQuery, where: WhereClause): UserSearchItem[
         `)
         .all(...where.params, query.pagesize, query.offset)
 
-    return z.array(userSearchItemSchema).parse(rows)
+    const page = z.array(userRowSchema).parse(rows)
+    const hobbies = hobbiesByUser(page.map((user) => user.id))
+
+    const users: UserSearchItem[] = []
+    for (const user of page) {
+        users.push({ ...user, hobbies: hobbies.get(user.id) ?? [] })
+    }
+
+    return users
 }
 
 function countMatches(where: WhereClause): number {

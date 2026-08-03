@@ -14,3 +14,6 @@ export const hobbySchema = z.object({
 })
 
 export type Hobby = z.infer<typeof hobbySchema>
+
+/** Response body of `GET /hobbies`. */
+export const hobbyListSchema = z.array(hobbySchema)

@@ -1,6 +1,6 @@
 export { type User, userSchema } from './user'
-export { type Hobby, hobbySchema } from './hobby'
-export { type Nationality, nationalitySchema } from './nationality'
+export { type Hobby, hobbyListSchema, hobbySchema } from './hobby'
+export { type Nationality, nationalityListSchema, nationalitySchema } from './nationality'
 export { type UserHobby, userHobbySchema } from './user-hobby'
 export {
     DEFAULT_PAGE_SIZE,

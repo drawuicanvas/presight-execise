@@ -10,10 +10,39 @@ import {
     userSearchResultSchema,
 } from '@presight/schema'
 import { db } from './db.ts'
+import { env } from './env.ts'
 import { searchUsers } from './user-search.ts'
 
 const app = express()
-const port = Number(process.env.PORT ?? 3000)
+
+/**
+ * The client calls this server directly rather than through a dev proxy, so it is a separate origin
+ * and needs CORS. `CORS_ORIGIN` is a comma-separated allowlist; `*` allows any origin.
+ */
+const allowedOrigins = new Set(
+    env.corsOrigin
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean),
+)
+
+app.use((req, res, next) => {
+    const { origin } = req.headers
+    if (origin !== undefined && (allowedOrigins.has('*') || allowedOrigins.has(origin))) {
+        res.setHeader('Access-Control-Allow-Origin', origin)
+        // The response varies by origin, so it must not be cached across origins.
+        res.setHeader('Vary', 'Origin')
+    }
+
+    if (req.method === 'OPTIONS') {
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        res.setHeader('Access-Control-Max-Age', '86400')
+        res.sendStatus(204)
+        return
+    }
+
+    next()
+})
 
 /** Rows leave the database untyped, so every response is parsed before it reaches the client. */
 const hobbyListSchema = z.array(hobbySchema)
@@ -55,6 +84,6 @@ const handleError: ErrorRequestHandler = (err, _req, res, _next) => {
 
 app.use(handleError)
 
-app.listen(port, () => {
-    console.log(`Server listening on http://localhost:${port}`)
+app.listen(env.port, () => {
+    console.log(`Server listening on http://localhost:${env.port}`)
 })

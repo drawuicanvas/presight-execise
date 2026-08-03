@@ -14,3 +14,6 @@ export const nationalitySchema = z.object({
 })
 
 export type Nationality = z.infer<typeof nationalitySchema>
+
+/** Response body of `GET /nationalities`. */
+export const nationalityListSchema = z.array(nationalitySchema)
