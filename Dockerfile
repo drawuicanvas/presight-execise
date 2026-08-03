@@ -35,6 +35,10 @@ RUN pnpm install --frozen-lockfile --offline
 RUN pnpm --filter=@presight/client build
 RUN pnpm --filter=@presight/server --prod deploy /presight-exercise-server
 
+# The sqlite database is never copied from the host, it is built here from the
+# committed user_data.csv so the image always carries a known-good dataset.
+RUN cd /presight-exercise-server && pnpm run init:prod
+
 # ---------------------------------------------------------------------------
 # client: static assets served by nginx
 # ---------------------------------------------------------------------------

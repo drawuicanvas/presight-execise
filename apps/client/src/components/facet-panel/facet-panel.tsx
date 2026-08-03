@@ -2,20 +2,22 @@ import { useState } from 'react'
 import { Collapse } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import type { FacetValue } from '@presight/schema'
+import { type FacetKind, selectedFor, toggleFor, useFiltersStore } from '../../store/filters-store'
 import styles from './facet-panel.module.scss'
 
 interface FacetPanelProps {
     title: string
     /** Top 20 for the current result set. `value` is the id/code to filter by, `label` is shown. */
     facets: FacetValue[]
-    /** Selected `value`s, not labels. */
-    selected: string[]
-    onToggle: (value: string) => void
+    /** Which filter list this panel drives. */
+    facet: FacetKind
     accent: 'yellow' | 'pink'
 }
 
 /** Facet list with counts. Collapsible on mobile (< 641px); always open on md+. */
-export function FacetPanel({ title, facets, selected, onToggle, accent }: FacetPanelProps) {
+export function FacetPanel({ title, facets, facet, accent }: FacetPanelProps) {
+    const selected = useFiltersStore(selectedFor[facet])
+    const onToggle = useFiltersStore(toggleFor[facet])
     const isMdUp = useMediaQuery('(min-width: 641px)', false)
     const [open, setOpen] = useState(false)
     const opened = isMdUp || open
@@ -36,24 +38,24 @@ export function FacetPanel({ title, facets, selected, onToggle, accent }: FacetP
             </button>
             <Collapse expanded={opened}>
                 <ul className={styles.rows}>
-                    {facets.map((facet) => {
-                        const isSelected = selected.includes(facet.value)
+                    {facets.map((entry) => {
+                        const isSelected = selected.includes(entry.value)
                         return (
-                            <li key={facet.value}>
+                            <li key={entry.value}>
                                 <button
                                     type="button"
                                     className={styles.row}
                                     data-selected={isSelected || undefined}
                                     data-accent={accent}
                                     aria-pressed={isSelected}
-                                    onClick={() => onToggle(facet.value)}
+                                    onClick={() => onToggle(entry.value)}
                                 >
                                     <span className={styles.name}>
                                         {isSelected && '● '}
-                                        {facet.label}
+                                        {entry.label}
                                     </span>
                                     <span className={styles.count} data-accent={accent}>
-                                        {facet.count}
+                                        {entry.count}
                                     </span>
                                 </button>
                             </li>

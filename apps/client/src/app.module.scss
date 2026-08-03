@@ -142,4 +142,11 @@
 
 .list {
     min-width: 0;
+    transition: opacity 140ms ease;
+
+    // Results kept from the previous filter state while the new ones load, so they need to read as
+    // provisional rather than current.
+    &[data-pending] {
+        opacity: 0.5;
+    }
 }

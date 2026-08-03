@@ -1,20 +1,22 @@
 import { useMemo, useState } from 'react'
 import { Combobox, useCombobox } from '@mantine/core'
 import type { FacetOption } from '../../api/types'
+import { type FacetKind, selectedFor, toggleFor, useFiltersStore } from '../../store/filters-store'
 import styles from './facet-combobox.module.scss'
 
 interface FacetComboboxProps {
     placeholder: string
     /** Predefined reference list from the API. */
     options: FacetOption[]
-    /** Selected `value`s, not labels. */
-    selected: string[]
-    onToggle: (value: string) => void
+    /** Which filter list this picker drives. */
+    facet: FacetKind
     accent: 'yellow' | 'pink'
 }
 
 /** Type-to-filter multi-select over a predefined list (Mantine headless Combobox). */
-export function FacetCombobox({ placeholder, options, selected, onToggle, accent }: FacetComboboxProps) {
+export function FacetCombobox({ placeholder, options, facet, accent }: FacetComboboxProps) {
+    const selected = useFiltersStore(selectedFor[facet])
+    const onToggle = useFiltersStore(toggleFor[facet])
     const [query, setQuery] = useState('')
     const combobox = useCombobox({
         onDropdownClose: () => combobox.resetSelectedOption(),

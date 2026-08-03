@@ -1,5 +1,6 @@
 import { Virtuoso } from 'react-virtuoso'
 import type { UserSearchItem } from '@presight/schema'
+import { selectClearAll, useFiltersStore } from '../../store/filters-store'
 import { UserCard } from '../user-card/user-card'
 import styles from './user-list.module.scss'
 
@@ -12,7 +13,6 @@ interface UserListProps {
     hasNextPage: boolean
     onLoadMore: () => void
     onRetry: () => void
-    onClearAll: () => void
 }
 
 function Skeleton() {
@@ -28,7 +28,8 @@ function Skeleton() {
 }
 
 export function UserList(props: UserListProps) {
-    const { users, total, isLoading, isError, isFetchingNextPage, hasNextPage, onLoadMore, onRetry, onClearAll } = props
+    const { users, total, isLoading, isError, isFetchingNextPage, hasNextPage, onLoadMore, onRetry } = props
+    const onClearAll = useFiltersStore(selectClearAll)
 
     // Initial load
     if (isLoading) {

@@ -11,14 +11,13 @@
 **/*.tsbuildinfo
 **/.vite/
 
-# local seed data (regenerate via `pnpm --filter=@presight/server data:create-fresh`)
+# local sqlite database (generated inside the image from user_data.csv)
 apps/server/data/
-apps/server/user_data.csv
 
-# env / secrets
-.env
-.env.*
-!apps/server/.env.example
+# env / secrets (patterns are not recursive, so match at any depth explicitly)
+**/.env
+**/.env.*
+!**/.env.example
 
 # editor / OS
 .vscode/
