@@ -11,9 +11,13 @@
         "typecheck:watch": "tsc --build --watch"
     },
     "dependencies": {
+        "@mantine/core": "^9.5.1",
+        "@mantine/hooks": "^9.5.1",
         "@presight/schema": "workspace:*",
+        "@tanstack/react-query": "^5.101.4",
         "react": "^19.2.8",
-        "react-dom": "^19.2.8"
+        "react-dom": "^19.2.8",
+        "react-virtuoso": "^4.18.11"
     },
     "devDependencies": {
         "@types/react": "^19.2.7",

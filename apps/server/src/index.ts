@@ -1,7 +1,16 @@
 import express, { type ErrorRequestHandler } from 'express'
 import { z } from 'zod'
-import { type Hobby, hobbySchema, type Nationality, nationalitySchema } from '@presight/schema'
+import {
+    type Hobby,
+    hobbySchema,
+    type Nationality,
+    nationalitySchema,
+    type UserSearchResult,
+    userSearchQuerySchema,
+    userSearchResultSchema,
+} from '@presight/schema'
 import { db } from './db.ts'
+import { searchUsers } from './user-search.ts'
 
 const app = express()
 const port = Number(process.env.PORT ?? 3000)
@@ -21,6 +30,22 @@ app.get('/hobbies', (_req, res) => {
 app.get('/nationalities', (_req, res) => {
     const nationalities: Nationality[] = nationalityListSchema.parse(selectNationalities.all())
     res.json(nationalities)
+})
+
+app.get('/users', (req, res) => {
+    const { searchParams } = new URL(req.originalUrl, `http://${req.headers.host ?? 'localhost'}`)
+    // A client that always serialises its whole filter state sends blanks (`?pagesize=&hobby_id=`);
+    // treat those as "not provided" so they fall back to the defaults instead of failing validation.
+    const rawQuery = Object.fromEntries([...searchParams].filter(([, value]) => value !== ''))
+    const parsedQuery = userSearchQuerySchema.safeParse(rawQuery)
+
+    if (!parsedQuery.success) {
+        res.status(400).json({ error: 'Invalid query parameters', issues: z.treeifyError(parsedQuery.error) })
+        return
+    }
+
+    const result: UserSearchResult = userSearchResultSchema.parse(searchUsers(parsedQuery.data))
+    res.json(result)
 })
 
 const handleError: ErrorRequestHandler = (err, _req, res, _next) => {
