@@ -102,11 +102,7 @@ export function UserList(props: UserListProps) {
                         )
                     }
                     if (!hasNextPage) {
-                        return (
-                            <div className={styles.end}>
-                                — CHEQUERED FLAG · ALL {total?.toLocaleString()} USERS LOADED —
-                            </div>
-                        )
+                        return <div className={styles.end}>— ALL {total?.toLocaleString()} USERS LOADED —</div>
                     }
                     return null
                 },

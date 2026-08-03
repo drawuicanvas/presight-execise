@@ -69,5 +69,9 @@ export function filtersToQueryString(filters: UserFilters): string {
         params.set(PARAM.sort, `${filters.sortField}:${filters.sortDir}`)
     }
 
-    return params.toString()
+    // `toString()` escapes the list and sort separators, giving `hobby=a%2Cb&sort=age%3Adesc`.
+    // Both are legal unencoded in a query string, and these links are meant to be shared and read.
+    // Safe to unescape blindly: parsing splits on them only for `hobby`/`nat`/`sort`, whose values
+    // are ids, codes and enum members — none of which can contain a comma or colon themselves.
+    return params.toString().replaceAll('%2C', ',').replaceAll('%3A', ':')
 }

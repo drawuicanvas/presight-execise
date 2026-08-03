@@ -99,9 +99,7 @@ export function App() {
                 {/* On failure the list itself reports the error; a placeholder count only adds noise. */}
                 {!usersQuery.isError && (
                     <div className={styles.count}>
-                        {firstPage
-                            ? `${firstPage.pagination.total.toLocaleString()} USERS ON TRACK`
-                            : '— USERS ON TRACK'}
+                        {firstPage ? `${firstPage.pagination.total.toLocaleString()} USERS` : '— USERS'}
                     </div>
                 )}
             </section>
