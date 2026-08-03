@@ -3,7 +3,8 @@
 A searchable, filterable directory of 1,000 users. Server-side search, filtering, sorting and
 pagination over SQLite; a virtualised React client with live facet counts.
 
-For running the production images, see **[docs/DOCKER.md](docs/DOCKER.md)**.
+- The brief this was built against: **[docs/EXERCISE.md](docs/EXERCISE.md)**
+- Running the production images: **[docs/DOCKER.md](docs/DOCKER.md)**
 
 ---
 
@@ -47,27 +48,27 @@ The server runs `.ts` files directly and has **no build step at all** — see
 pnpm install
 
 # creates apps/server/.env from .env.example and seeds the SQLite database
-pnpm --filter=@presight/server init:dev
-
-# the client imports @presight/schema from its dist/, so build it once up front
-pnpm --filter=@presight/schema build
+pnpx nx init:dev @presight/server
 ```
 
 Then run the two apps in separate terminals:
 
 ```bash
-pnpm --filter=@presight/server dev     # http://localhost:3000
-pnpm --filter=@presight/client dev     # http://localhost:5175
+pnpx nx dev @presight/server     # http://localhost:3000
+pnpx nx dev @presight/client     # http://localhost:5175
 ```
 
 Open <http://localhost:5175>.
+
+Both `dev` targets declare `dependsOn: ["^build"]` in `nx.json`, so nx builds `@presight/schema`
+first — there is no separate step to remember.
 
 The client requests the relative path `/api`, which Vite proxies to the server. Both apps are
 therefore one origin as far as the browser is concerned — no CORS, and no URL to keep in sync. If
 port 3000 is taken, point the proxy elsewhere:
 
 ```bash
-API_PROXY_TARGET=http://localhost:3001 pnpm --filter=@presight/client dev
+API_PROXY_TARGET=http://localhost:3001 pnpx nx dev @presight/client
 ```
 
 ---
@@ -113,18 +114,22 @@ Run from the repo root.
 
 ### Everything
 
-| Command                               | What it does                                        |
-| ------------------------------------- | --------------------------------------------------- |
-| `pnpm exec nx build @presight/client` | Builds schema first, then the client, via `^build`  |
-| `pnpm -r build`                       | Same outcome; only schema and client have a `build` |
-| `pnpm lint`                           | oxlint across the workspace                         |
-| `pnpm format`                         | oxfmt, writing changes                              |
-| `pnpm format:check`                   | oxfmt in check mode (use in CI)                     |
+| Command                          | What it does                                        |
+| -------------------------------- | --------------------------------------------------- |
+| `pnpx nx build @presight/client` | Builds schema first, then the client, via `^build`  |
+| `pnpx nx dev @presight/server`   | Any package script is an nx target                  |
+| `pnpm -r build`                  | Same outcome; only schema and client have a `build` |
+| `pnpm lint`                      | oxlint across the workspace                         |
+| `pnpm format`                    | oxfmt, writing changes                              |
+| `pnpm format:check`              | oxfmt in check mode (use in CI)                     |
 
 nx wants `<target> <project>` or `run <project>:<target>`. A bare `nx @presight/client:build`
 fails with _"Both project and target have to be specified"_ — the first argument is read as a
-target name. Note also that `pnpx` is `pnpm dlx`, which fetches a package into a temp environment;
-use `pnpm exec nx` to run the workspace's own copy.
+target name.
+
+`pnpx` is `pnpm dlx`, but nx's launcher detects the workspace and delegates to the pinned local
+install, so `pnpx nx --version` reports `Local: v23.1.1` and you get the same binary as
+`pnpm exec nx`. Either spelling is fine.
 
 ### Server — `pnpm --filter=@presight/server <script>`
 
@@ -256,24 +261,3 @@ Selector note: zustand v5 dropped the automatic shallow compare. Selectors retur
 value are used directly; any selector building an object **must** be wrapped in `useShallow`, or it
 returns a fresh reference on every store write and re-renders forever. See
 [`filters-store.ts`](apps/client/src/store/filters-store.ts).
-
----
-
-## Troubleshooting
-
-**`ERR_PNPM_IGNORED_BUILDS` on install** — a dependency with an install script has no entry under
-`allowBuilds` in `pnpm-workspace.yaml`. Set it to `true` or `false`. This is not cosmetic: in that
-state `pnpm install` **exits 1**, which fails `RUN pnpm install --frozen-lockfile` in the Docker
-build.
-
-**Client build fails with "has no exported member"** — the schema `dist/` is stale.
-Run `pnpm --filter=@presight/schema build`.
-
-**`unplugin-dts` complains about the TypeScript compiler API** — TypeScript 7 dropped the JS
-compiler API that `vite-plugin-dts` needs. `@typescript/typescript6` is installed alongside to
-provide it; if it goes missing, reinstall.
-
-**Every API request fails in the browser** — the dev proxy cannot reach the server. Confirm the
-API is running, and that `API_PROXY_TARGET` points at the process actually answering on that port.
-A `404` on `/api/...` usually means the client is bypassing the proxy because `VITE_API_BASE_URL`
-is set in a local `.env`.
