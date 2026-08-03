@@ -1,0 +1,44 @@
+# Local verification of the production images. Both services build from the single root
+# Dockerfile, selecting a different target stage.
+#
+#   docker compose up --build
+#   client -> http://localhost:8086
+#   api    -> http://localhost:3030
+#
+# Host ports are overridable when something already holds them:
+#
+#   WEB_PORT=8090 API_PORT=3031 docker compose up --build
+#
+# Both variables feed CORS_ORIGIN and VITE_API_BASE_URL as well, so the two stay in step. Changing
+# API_PORT requires a rebuild — the client's API URL is inlined into its bundle at build time.
+services:
+    server:
+        build:
+            context: .
+            target: pseserver
+        image: presight-server
+        environment:
+            NODE_ENV: production
+            PORT: 3030
+            # Relative to the app root inside the image. The database is baked in at build time
+            # from user_data.csv, so no volume is needed.
+            DATABASE_FILE: data/user_data.db
+            # Must be the origin the BROWSER loads the client from: the published nginx port.
+            CORS_ORIGIN: http://localhost:${WEB_PORT:-8086}
+        ports:
+            - '${API_PORT:-3030}:3030'
+
+    client:
+        build:
+            context: .
+            target: pseclient
+            args:
+                # Baked into the JS bundle at build time. Resolved by the browser, so it points at
+                # the published host port — NOT http://server:3030, which only resolves inside
+                # this network and would fail for the user's browser.
+                VITE_API_BASE_URL: http://localhost:${API_PORT:-3030}
+        image: presight-client
+        ports:
+            - '${WEB_PORT:-8086}:8086'
+        depends_on:
+            - server

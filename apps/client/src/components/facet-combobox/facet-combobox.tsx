@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Combobox, useCombobox } from '@mantine/core'
+import { Check, Plus } from 'lucide-react'
 import type { FacetOption } from '../../api/types'
 import { type FacetKind, selectedFor, toggleFor, useFiltersStore } from '../../store/filters-store'
+import { Flag } from '../flag/flag'
 import styles from './facet-combobox.module.scss'
 
 interface FacetComboboxProps {
@@ -36,21 +38,24 @@ export function FacetCombobox({ placeholder, options, facet, accent }: FacetComb
                 setQuery('')
             }}
         >
-            <Combobox.Target>
-                <input
-                    className={styles.input}
-                    data-accent={accent}
-                    value={query}
-                    placeholder={placeholder}
-                    aria-label={placeholder}
-                    onFocus={() => combobox.openDropdown()}
-                    onBlur={() => combobox.closeDropdown()}
-                    onChange={(e) => {
-                        setQuery(e.currentTarget.value)
-                        combobox.openDropdown()
-                    }}
-                />
-            </Combobox.Target>
+            <div className={styles.field}>
+                <Plus className={styles.icon} size={14} strokeWidth={3} data-accent={accent} aria-hidden />
+                <Combobox.Target>
+                    <input
+                        className={styles.input}
+                        data-accent={accent}
+                        value={query}
+                        placeholder={placeholder}
+                        aria-label={placeholder}
+                        onFocus={() => combobox.openDropdown()}
+                        onBlur={() => combobox.closeDropdown()}
+                        onChange={(e) => {
+                            setQuery(e.currentTarget.value)
+                            combobox.openDropdown()
+                        }}
+                    />
+                </Combobox.Target>
+            </div>
 
             <Combobox.Dropdown className={styles.dropdown} data-accent={accent}>
                 <Combobox.Options className={styles.options}>
@@ -66,8 +71,11 @@ export function FacetCombobox({ placeholder, options, facet, accent }: FacetComb
                                 className={styles.option}
                                 data-selected={isSelected || undefined}
                             >
-                                <span>{option.label.toUpperCase()}</span>
-                                {isSelected && <span className={styles.check}>✓</span>}
+                                <span>
+                                    {facet === 'nationality' && <Flag code={option.value} />}
+                                    {option.label.toUpperCase()}
+                                </span>
+                                {isSelected && <Check className={styles.check} size={13} strokeWidth={3} aria-hidden />}
                             </Combobox.Option>
                         )
                     })}

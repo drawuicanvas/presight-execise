@@ -32,7 +32,12 @@
 
 .caret {
     color: var(--c-dim);
-    font-size: 12px;
+    flex: none;
+    transition: transform 150ms ease;
+
+    &[data-open] {
+        transform: rotate(180deg);
+    }
 
     @include md {
         display: none;

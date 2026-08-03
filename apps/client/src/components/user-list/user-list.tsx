@@ -1,4 +1,5 @@
 import { Virtuoso } from 'react-virtuoso'
+import { CheckCheck, LoaderCircle, RefreshCw, SearchX, TriangleAlert } from 'lucide-react'
 import type { UserSearchItem } from '@presight/schema'
 import { selectClearAll, useFiltersStore } from '../../store/filters-store'
 import { UserCard } from '../user-card/user-card'
@@ -46,9 +47,13 @@ export function UserList(props: UserListProps) {
     if (isError && users.length === 0) {
         return (
             <div className={styles.error} role="alert">
-                <span className={styles.errorTitle}>◤ PIT WALL ERROR ◢</span>
+                <span className={styles.errorTitle}>
+                    <TriangleAlert size={15} strokeWidth={2.5} aria-hidden />
+                    SOMETHING WENT WRONG
+                </span>
                 <span className={styles.errorMsg}>Couldn't load users.</span>
                 <button type="button" className={styles.retry} onClick={onRetry}>
+                    <RefreshCw size={13} strokeWidth={2.5} aria-hidden />
                     RETRY
                 </button>
             </div>
@@ -59,9 +64,13 @@ export function UserList(props: UserListProps) {
     if (total === 0) {
         return (
             <div className={styles.empty}>
-                <div className={styles.emptyTitle}>◤ NO USERS ON TRACK ◢</div>
+                <div className={styles.emptyTitle}>
+                    <SearchX size={26} strokeWidth={2} aria-hidden />
+                    NO USERS FOUND
+                </div>
                 <div className={styles.emptyMsg}>Nobody matches the current filters. Ease off and try again.</div>
                 <button type="button" className={styles.clearBtn} onClick={onClearAll}>
+                    <RefreshCw size={13} strokeWidth={2.5} aria-hidden />
                     CLEAR ALL FILTERS
                 </button>
             </div>
@@ -85,9 +94,13 @@ export function UserList(props: UserListProps) {
                     if (isError) {
                         return (
                             <div className={styles.error} role="alert">
-                                <span className={styles.errorTitle}>◤ PIT WALL ERROR ◢</span>
+                                <span className={styles.errorTitle}>
+                                    <TriangleAlert size={15} strokeWidth={2.5} aria-hidden />
+                                    SOMETHING WENT WRONG
+                                </span>
                                 <span className={styles.errorMsg}>Couldn't load the next page of users.</span>
                                 <button type="button" className={styles.retry} onClick={onRetry}>
+                                    <RefreshCw size={13} strokeWidth={2.5} aria-hidden />
                                     RETRY
                                 </button>
                             </div>
@@ -97,12 +110,20 @@ export function UserList(props: UserListProps) {
                         return (
                             <div className={styles.stack}>
                                 <Skeleton />
-                                <div className={styles.loadingLabel}>◤ LOADING NEXT LAP… ◢</div>
+                                <div className={styles.loadingLabel}>
+                                    <LoaderCircle className={styles.spinner} size={14} strokeWidth={2.5} aria-hidden />
+                                    LOADING MORE…
+                                </div>
                             </div>
                         )
                     }
                     if (!hasNextPage) {
-                        return <div className={styles.end}>— ALL {total?.toLocaleString()} USERS LOADED —</div>
+                        return (
+                            <div className={styles.end}>
+                                <CheckCheck size={14} strokeWidth={2.5} aria-hidden />
+                                ALL {total?.toLocaleString()} USERS LOADED
+                            </div>
+                        )
                     }
                     return null
                 },

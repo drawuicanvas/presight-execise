@@ -20,6 +20,15 @@ RUN npm install -g corepack && corepack enable && corepack prepare pnpm@${PNPM_V
 # ---------------------------------------------------------------------------
 
 FROM base AS app-build
+
+# Vite inlines import.meta.env at build time, so the client's API base URL is frozen into the
+# JS bundle here. It CANNOT be changed later with an env var on the running container — pointing
+# the client somewhere else means rebuilding with a different value.
+# This URL is resolved by the browser, so it must be reachable from the host, not from inside
+# the compose network (http://localhost:3030, never http://server:3030).
+ARG VITE_API_BASE_URL=http://localhost:3030
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+
 COPY . .
 
 RUN pnpm install --frozen-lockfile

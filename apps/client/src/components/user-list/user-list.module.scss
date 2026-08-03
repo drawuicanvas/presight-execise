@@ -44,6 +44,10 @@
 }
 
 .loadingLabel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     text-align: center;
     font: 800 11px var(--font);
     font-style: italic;
@@ -64,6 +68,9 @@
 }
 
 .errorTitle {
+    display: flex;
+    align-items: center;
+    gap: 7px;
     font: 900 12px var(--font);
     font-style: italic;
     color: var(--c-error);
@@ -78,6 +85,9 @@
 .retry {
     appearance: none;
     background: transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
     padding: 8px 16px;
     border: 1px solid var(--c-error);
     color: #ffb3b3;
@@ -99,6 +109,10 @@
 }
 
 .emptyTitle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
     font: 900 20px var(--font);
     font-style: italic;
     letter-spacing: 1px;
@@ -126,9 +140,24 @@
 }
 
 .end {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     text-align: center;
     font: 700 11px var(--font);
     letter-spacing: 2px;
     color: rgba(255, 255, 255, 0.35);
     padding: 14px;
+}
+
+.spinner {
+    flex: none;
+    animation: spin 900ms linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
 }

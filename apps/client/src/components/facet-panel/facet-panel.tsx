@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Collapse } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
+import { ChevronDown } from 'lucide-react'
 import type { FacetValue } from '@presight/schema'
 import { type FacetKind, selectedFor, toggleFor, useFiltersStore } from '../../store/filters-store'
+import { Flag } from '../flag/flag'
 import styles from './facet-panel.module.scss'
 
 interface FacetPanelProps {
@@ -34,7 +36,13 @@ export function FacetPanel({ title, facets, facet, accent }: FacetPanelProps) {
                 <span className={styles.title}>
                     {title} · {facets.length}
                 </span>
-                <span className={styles.caret}>{opened ? '▴' : '▾'}</span>
+                <ChevronDown
+                    className={styles.caret}
+                    size={15}
+                    strokeWidth={2.5}
+                    data-open={opened || undefined}
+                    aria-hidden
+                />
             </button>
             <Collapse expanded={opened}>
                 <ul className={styles.rows}>
@@ -52,6 +60,7 @@ export function FacetPanel({ title, facets, facet, accent }: FacetPanelProps) {
                                 >
                                     <span className={styles.name}>
                                         {isSelected && '● '}
+                                        {facet === 'nationality' && <Flag code={entry.value} />}
                                         {entry.label}
                                     </span>
                                     <span className={styles.count} data-accent={accent}>

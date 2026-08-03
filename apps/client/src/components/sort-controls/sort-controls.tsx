@@ -1,5 +1,5 @@
 import { Combobox, useCombobox } from '@mantine/core'
-import { ChevronDown } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown } from 'lucide-react'
 import type { UserSortField } from '@presight/schema'
 import { useShallow } from 'zustand/react/shallow'
 import { selectSortControls, useFiltersStore } from '../../store/filters-store'
@@ -46,6 +46,7 @@ export function SortControls() {
                         aria-label="Sort field"
                         onClick={() => combobox.toggleDropdown()}
                     >
+                        <ArrowUpDown className={styles.sortIcon} size={13} strokeWidth={2.5} aria-hidden />
                         <span className={styles.prefix}>SORT:</span>
                         <span className={styles.value}>{activeLabel}</span>
                         <ChevronDown
@@ -83,6 +84,7 @@ export function SortControls() {
                     aria-pressed={dir === 'asc'}
                     onClick={() => onDirChange('asc')}
                 >
+                    <ArrowUp size={12} strokeWidth={3} aria-hidden />
                     ASC
                 </button>
                 <button
@@ -92,6 +94,7 @@ export function SortControls() {
                     aria-pressed={dir === 'desc'}
                     onClick={() => onDirChange('desc')}
                 >
+                    <ArrowDown size={12} strokeWidth={3} aria-hidden />
                     DESC
                 </button>
             </div>

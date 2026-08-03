@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { useDebouncedValue } from '@mantine/hooks'
+import { LayoutList } from 'lucide-react'
 import { fetchHobbies, fetchNationalities, fetchUsers, nextPageOffset } from './api/users-api'
 import { type FacetOption, toHobbyOption, toNationalityOption, type UserFilters } from './api/types'
 import { useShallow } from 'zustand/react/shallow'
@@ -70,6 +71,7 @@ export function App() {
             {/* Block 1 — brand · text filter · sort */}
             <header className={styles.block1}>
                 <div className={styles.brand}>
+                    <LayoutList className={styles.logoIcon} size={22} strokeWidth={2.75} aria-hidden />
                     <span className={styles.logo}>LIST</span>
                     <div className={styles.title}>USER DIRECTORY</div>
                 </div>
@@ -83,13 +85,13 @@ export function App() {
             <section className={styles.block2}>
                 <div className={styles.filtersRow}>
                     <FacetCombobox
-                        placeholder="+ HOBBY FILTER — TYPE TO SEARCH"
+                        placeholder="HOBBY FILTER — TYPE TO SEARCH"
                         options={hobbyOptions}
                         facet="hobby"
                         accent="yellow"
                     />
                     <FacetCombobox
-                        placeholder="+ NATIONALITY FILTER — TYPE TO SEARCH"
+                        placeholder="NATIONALITY FILTER — TYPE TO SEARCH"
                         options={nationalityOptions}
                         facet="nationality"
                         accent="pink"

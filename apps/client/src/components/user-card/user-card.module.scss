@@ -23,12 +23,11 @@
     }
 }
 
-.avatar {
+// Shared by the portrait and its fallback so swapping one for the other cannot shift the row.
+@mixin avatar-box {
     flex: none;
     width: 44px;
     height: 44px;
-    object-fit: cover;
-    // Stands in for the portrait until it loads, and covers avatars that fail to load entirely.
     background: rgba(255, 255, 255, 0.06);
     clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
 
@@ -36,6 +35,20 @@
         width: 46px;
         height: 46px;
     }
+}
+
+.avatar {
+    @include avatar-box;
+    // Also stands in while the portrait is still downloading.
+    object-fit: cover;
+}
+
+.avatarFallback {
+    @include avatar-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--c-faint);
 }
 
 .body {

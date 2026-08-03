@@ -33,12 +33,16 @@
 
 .x {
     opacity: 0.65;
+    flex: none;
 }
 
 .clear {
     appearance: none;
     border: none;
     background: transparent;
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font: 700 11px var(--font);
     letter-spacing: 1px;
     color: rgba(255, 255, 255, 0.5);

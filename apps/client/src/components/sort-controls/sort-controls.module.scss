@@ -26,6 +26,11 @@
     }
 }
 
+.sortIcon {
+    flex: none;
+    color: rgba(255, 212, 0, 0.65);
+}
+
 .prefix {
     color: rgba(255, 212, 0, 0.65);
 }
@@ -92,6 +97,9 @@
     appearance: none;
     background: transparent;
     border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     padding: 11px 12px;
     font: 800 12px var(--font);
     color: rgba(255, 255, 255, 0.5);
