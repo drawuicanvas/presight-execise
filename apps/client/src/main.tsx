@@ -5,9 +5,11 @@ import { HeadlessMantineProvider } from '@mantine/core'
 import { App } from './app'
 import './styles/global.scss'
 
+// No default staleTime: how long each response stays fresh depends on the data, so every query
+// states its own (see STALE_TIME in app.tsx).
 const queryClient = new QueryClient({
     defaultOptions: {
-        queries: { staleTime: 30_000, retry: 1 },
+        queries: { retry: 1 },
     },
 })
 

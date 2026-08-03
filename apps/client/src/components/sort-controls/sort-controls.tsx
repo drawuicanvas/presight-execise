@@ -24,9 +24,13 @@ export function SortControls({ field, dir, onFieldChange, onDirChange }: SortCon
     return (
         <div className={styles.root}>
             {/* Portalled on purpose: `.root` is skewed, and a transform applies to descendants, so
-                an inline dropdown would render skewed too — unlike the facet pickers'. */}
+                an inline dropdown would render skewed too — unlike the facet pickers'.
+                `floatingStrategy="fixed"` makes Mantine compute viewport-relative coordinates, which
+                is what a body-portalled dropdown needs; `.dropdown` sets the matching
+                `position: fixed`, since headless mode ships no Popover CSS to supply it. */}
             <Combobox
                 store={combobox}
+                floatingStrategy="fixed"
                 onOptionSubmit={(value) => {
                     onFieldChange(value as UserSortField)
                     combobox.closeDropdown()

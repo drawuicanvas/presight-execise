@@ -46,6 +46,10 @@
 }
 
 .dropdown {
+    // Required: `position` normally comes from Mantine's Popover.css, which HeadlessMantineProvider
+    // does not load. Without it the dropdown stays static and flows to the end of <body>.
+    // Must stay in sync with the Combobox's floatingStrategy.
+    position: fixed;
     z-index: 40;
     // Portalled, so a percentage width would resolve against the body rather than the trigger.
     min-width: 168px;

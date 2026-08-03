@@ -2,7 +2,9 @@
 
 :root {
     --c-bg: #131118;
-    --c-surface: rgba(24, 21, 30, 0.82);
+    // Card surface. Sits a clear step above --c-bg so rows read as distinct cards; the earlier
+    // value composited to #17151D, barely 4/255 off the page background.
+    --c-surface: rgba(39, 33, 50, 0.86);
     --c-panel: rgba(19, 16, 24, 0.8);
     --c-popover: #1c1823;
     --c-line: rgba(255, 255, 255, 0.09);

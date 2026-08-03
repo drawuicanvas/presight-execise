@@ -20,6 +20,13 @@ const DEFAULT_FILTERS: UserFilters = {
     sortDir: 'asc',
 }
 
+const STALE_TIME = {
+    /** Hobbies and nationalities are fixed reference lists — refetching them is near-pointless. */
+    reference: 10 * 60 * 1000,
+    /** Results can change under the filters, so keep them fresh on a much shorter leash. */
+    users: 60 * 1000,
+} as const
+
 /** Which filter list a value belongs to, so one toggle handler can serve both facets. */
 type FacetKey = 'hobbyIds' | 'nationalityCodes'
 
@@ -32,8 +39,16 @@ export function App() {
     const [filters, setFilters] = useState<UserFilters>(DEFAULT_FILTERS)
     const patch = (p: Partial<UserFilters>) => setFilters((f) => ({ ...f, ...p }))
 
-    const hobbiesQuery = useQuery({ queryKey: ['hobbies'], queryFn: fetchHobbies })
-    const nationalitiesQuery = useQuery({ queryKey: ['nationalities'], queryFn: fetchNationalities })
+    const hobbiesQuery = useQuery({
+        queryKey: ['hobbies'],
+        queryFn: fetchHobbies,
+        staleTime: STALE_TIME.reference,
+    })
+    const nationalitiesQuery = useQuery({
+        queryKey: ['nationalities'],
+        queryFn: fetchNationalities,
+        staleTime: STALE_TIME.reference,
+    })
 
     const hobbyOptions: FacetOption[] = useMemo(() => (hobbiesQuery.data ?? []).map(toHobbyOption), [hobbiesQuery.data])
     const nationalityOptions: FacetOption[] = useMemo(
@@ -51,6 +66,7 @@ export function App() {
         queryFn: ({ pageParam }) => fetchUsers(query, pageParam),
         initialPageParam: 0,
         getNextPageParam: nextPageOffset,
+        staleTime: STALE_TIME.users,
     })
 
     const users = useMemo(() => usersQuery.data?.pages.flatMap((p) => p.users) ?? [], [usersQuery.data])
