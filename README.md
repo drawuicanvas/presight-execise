@@ -13,8 +13,10 @@ For running the production images, see **[docs/DOCKER.md](docs/DOCKER.md)**.
 | ---- | ---------- | --------------------------------------------------------------- |
 | Node | **>= 26**  | Uses the built-in `node:sqlite` and native TypeScript execution |
 | pnpm | **11.8.0** | `corepack enable` picks the right version up automatically      |
+| nx   | 23.x       | Task runner; `nx.json` sets `build.dependsOn: ["^build"]`       |
 
-The server runs `.ts` files directly — there is no build step in development.
+The server runs `.ts` files directly and has **no build step at all** — see
+[Why the server never builds](#why-the-server-never-builds).
 
 ---
 
@@ -62,14 +64,25 @@ apps/
 client's parsing of them come from the same zod schemas, so the wire format cannot drift from the
 types without something failing loudly.
 
-One wrinkle worth knowing: `pnpm-workspace.yaml` sets `injectWorkspacePackages: true`, so
-consumers get a **copy** of the schema package made at install time, not a live symlink. After
-changing anything in `apps/schema`, rebuild it — otherwise the client and server keep compiling
-against the previous version:
+Consumers resolve it through a live symlink to `apps/schema`, so a rebuild is picked up
+immediately — but `dist/` has to exist and be current. After changing anything in `apps/schema`,
+rebuild it, or the other two keep compiling against the previous output:
 
 ```bash
 pnpm --filter=@presight/schema build
 ```
+
+nx does this for you when you build through it (`build.dependsOn: ["^build"]`).
+
+### Why the server never builds
+
+Node 26 strips TypeScript types natively, so `apps/server` runs its source directly —
+`node src/index.ts` in development, and the same command inside the container. There is nothing to
+transpile, so the package has no `build` script and `pnpm -r build` covers only schema and client.
+The Docker image ships the `.ts` files via `pnpm deploy --prod`.
+
+`apps/server/build.js` and the `esbuild` devDependency are leftovers from the removed step and can
+go.
 
 ---
 
@@ -79,12 +92,18 @@ Run from the repo root.
 
 ### Everything
 
-| Command             | What it does                                 |
-| ------------------- | -------------------------------------------- |
-| `pnpm -r build`     | Build all three packages in dependency order |
-| `pnpm lint`         | oxlint across the workspace                  |
-| `pnpm format`       | oxfmt, writing changes                       |
-| `pnpm format:check` | oxfmt in check mode (use in CI)              |
+| Command                               | What it does                                        |
+| ------------------------------------- | --------------------------------------------------- |
+| `pnpm exec nx build @presight/client` | Builds schema first, then the client, via `^build`  |
+| `pnpm -r build`                       | Same outcome; only schema and client have a `build` |
+| `pnpm lint`                           | oxlint across the workspace                         |
+| `pnpm format`                         | oxfmt, writing changes                              |
+| `pnpm format:check`                   | oxfmt in check mode (use in CI)                     |
+
+nx wants `<target> <project>` or `run <project>:<target>`. A bare `nx @presight/client:build`
+fails with _"Both project and target have to be specified"_ — the first argument is read as a
+target name. Note also that `pnpx` is `pnpm dlx`, which fetches a package into a temp environment;
+use `pnpm exec nx` to run the workspace's own copy.
 
 ### Server — `pnpm --filter=@presight/server <script>`
 
@@ -92,7 +111,7 @@ Run from the repo root.
 | ------------------- | -------------------------------------------------------------- |
 | `dev`               | Watch mode, reads `.env`                                       |
 | `start`             | Run once, real process env only                                |
-| `build`             | esbuild bundle to `dist/`                                      |
+| `typecheck`         | `tsc`, no emit — the server never produces build output        |
 | `init:dev`          | Create `.env` from the example, then seed the database         |
 | `init:prod`         | Seed the database only (no `.env` — used by the Docker build)  |
 | `data:seed`         | Rebuild `data/user_data.db` from the committed `user_data.csv` |
@@ -221,8 +240,10 @@ returns a fresh reference on every store write and re-renders forever. See
 
 ## Troubleshooting
 
-**`ERR_PNPM_IGNORED_BUILDS` on install** — approve or decline the build script in
-`pnpm-workspace.yaml` under `allowBuilds`.
+**`ERR_PNPM_IGNORED_BUILDS` on install** — a dependency with an install script has no entry under
+`allowBuilds` in `pnpm-workspace.yaml`. Set it to `true` or `false`. This is not cosmetic: in that
+state `pnpm install` **exits 1**, which fails `RUN pnpm install --frozen-lockfile` in the Docker
+build.
 
 **Client build fails with "has no exported member"** — the schema `dist/` is stale.
 Run `pnpm --filter=@presight/schema build`.

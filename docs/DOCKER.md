@@ -8,9 +8,13 @@ publishable targets:
 | `pseserver` | `node:26-slim` | Express API + SQLite database                | `3030`     | ~277MB |
 | `pseclient` | `nginx:alpine` | The client's static `dist/`, served by nginx | `8086`     | ~65MB  |
 
-The shared `app-build` stage compiles all three workspace packages once, then
-`pnpm --filter=@presight/server --prod deploy` produces a self-contained server tree with only
-production dependencies — no monorepo, no pnpm at runtime.
+The shared `app-build` stage runs `pnpm exec nx build @presight/client`, which builds
+`@presight/schema` first because `nx.json` declares `build.dependsOn: ["^build"]` — the same task
+graph used locally. `NX_DAEMON=false` keeps nx from starting a background daemon in the image.
+
+The server is never built: Node 26 runs its TypeScript directly, so
+`pnpm --filter=@presight/server --prod deploy` copies the source plus production-only dependencies
+into a self-contained tree — no monorepo, no pnpm, no bundler at runtime.
 
 **The database is baked into the image.** The build seeds `data/user_data.db` from the committed
 `user_data.csv` via `init:prod`, so the server image ships with a known-good 1,000-user dataset and
@@ -185,9 +189,14 @@ Check `docker compose logs client`. If nginx is fine, the `app-build` stage like
 empty `dist/`; rebuild with `--progress=plain --no-cache` and read the client build step.
 
 **Schema changes are not reflected**
-`pnpm-workspace.yaml` sets `injectWorkspacePackages: true`, so consumers receive a copy of
-`@presight/schema` made at install time. The Dockerfile installs, builds the schema, then installs
-again — do not remove that second `pnpm install`.
+`@presight/schema` is resolved through a symlink inside the image (verified: the client's
+`node_modules/@presight/schema` is a link to `apps/schema`), so nx building it is enough. If you
+replace the nx call with a direct client build, schema will not be built first and the client will
+fail to typecheck.
+
+**`ERR_PNPM_IGNORED_BUILDS` during `RUN pnpm install`**
+A dependency with an install script is unresolved in `allowBuilds`. `pnpm install` exits 1 in that
+state, so the image build fails. Fix it in `pnpm-workspace.yaml`, not in the Dockerfile.
 
 ---
 

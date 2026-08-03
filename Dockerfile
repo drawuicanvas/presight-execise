@@ -28,16 +28,13 @@ FROM base AS app-build
 COPY . .
 
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter=@presight/schema build
 
-# @presight/schema is an "injected" workspace dependency (pnpm-workspace.yaml
-# sets injectWorkspacePackages: true), meaning consumers get a hard copy of it
-# made at install time, not a live symlink. Re-run install so the client and
-# server pick up the schema dist/ that was just built above.
+# Build through nx so the image uses the same task graph as local development: nx.json declares
+# build.dependsOn = ["^build"], so asking for the client also builds @presight/schema first, in
+# the right order. No daemon in a container — it only adds a background process and a socket.
+ENV NX_DAEMON=false
+RUN pnpm exec nx build @presight/client
 
-RUN pnpm install --frozen-lockfile --offline
-
-RUN pnpm --filter=@presight/client build
 RUN pnpm --filter=@presight/server --prod deploy /presight-exercise-server
 
 # The sqlite database is never copied from the host, it is built here from the

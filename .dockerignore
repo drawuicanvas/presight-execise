@@ -11,6 +11,9 @@
 **/*.tsbuildinfo
 **/.vite/
 
+# nx task cache — copying the host's would let the image restore build outputs it never produced
+.nx/
+
 # local sqlite database (generated inside the image from user_data.csv)
 apps/server/data/
 
