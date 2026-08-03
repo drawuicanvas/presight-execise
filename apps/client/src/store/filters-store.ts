@@ -42,17 +42,48 @@ export const useFiltersStore = create<FiltersStore>((set) => ({
     replace: (filters) => set(filters),
 }))
 
-// Atomic selectors, defined once. zustand v5 dropped the automatic shallow compare, so a selector
-// returning a fresh object (`(s) => ({ a: s.a, b: s.b })`) would re-render on every store write.
+/*
+ * Selector policy — zustand v5 dropped the automatic shallow compare, so a selector building a
+ * fresh object returns a new reference on every store write and re-renders forever.
+ *
+ *   one value   -> select it directly. `(s) => s.search` is already reference-stable; wrapping it
+ *                  in `useShallow` only adds an allocation and a comparison to reach the same result.
+ *   many values -> build an object and wrap the selector in `useShallow` at the call site, which
+ *                  hands back the previous reference whenever the fields are unchanged.
+ */
+
+// --- single values ---
 export const selectSearch = (s: FiltersStore) => s.search
 export const selectHobbyIds = (s: FiltersStore) => s.hobbyIds
 export const selectNationalityCodes = (s: FiltersStore) => s.nationalityCodes
-export const selectSortField = (s: FiltersStore) => s.sortField
-export const selectSortDir = (s: FiltersStore) => s.sortDir
 export const selectSetSearch = (s: FiltersStore) => s.setSearch
-export const selectSetSortField = (s: FiltersStore) => s.setSortField
-export const selectSetSortDir = (s: FiltersStore) => s.setSortDir
 export const selectClearAll = (s: FiltersStore) => s.clearAll
+
+// --- composites: every one of these MUST be wrapped in useShallow by the caller ---
+
+/** The whole filter set, as the API layer wants it. */
+export const selectFilters = (s: FiltersStore): UserFilters => ({
+    search: s.search,
+    hobbyIds: s.hobbyIds,
+    nationalityCodes: s.nationalityCodes,
+    sortField: s.sortField,
+    sortDir: s.sortDir,
+})
+
+export const selectSortControls = (s: FiltersStore) => ({
+    sortField: s.sortField,
+    sortDir: s.sortDir,
+    setSortField: s.setSortField,
+    setSortDir: s.setSortDir,
+})
+
+export const selectChips = (s: FiltersStore) => ({
+    hobbyIds: s.hobbyIds,
+    nationalityCodes: s.nationalityCodes,
+    toggleHobby: s.toggleHobby,
+    toggleNationality: s.toggleNationality,
+    clearAll: s.clearAll,
+})
 
 /** Per-facet selectors, so `FacetKind` is the only thing a facet component needs to know. */
 export const selectedFor: Record<FacetKind, (s: FiltersStore) => string[]> = {

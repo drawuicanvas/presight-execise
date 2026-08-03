@@ -1,13 +1,8 @@
 import { Combobox, useCombobox } from '@mantine/core'
 import { ChevronDown } from 'lucide-react'
 import type { UserSortField } from '@presight/schema'
-import {
-    selectSetSortDir,
-    selectSetSortField,
-    selectSortDir,
-    selectSortField,
-    useFiltersStore,
-} from '../../store/filters-store'
+import { useShallow } from 'zustand/react/shallow'
+import { selectSortControls, useFiltersStore } from '../../store/filters-store'
 import styles from './sort-controls.module.scss'
 
 const FIELDS: { value: UserSortField; label: string }[] = [
@@ -18,10 +13,12 @@ const FIELDS: { value: UserSortField; label: string }[] = [
 ]
 
 export function SortControls() {
-    const field = useFiltersStore(selectSortField)
-    const dir = useFiltersStore(selectSortDir)
-    const onFieldChange = useFiltersStore(selectSetSortField)
-    const onDirChange = useFiltersStore(selectSetSortDir)
+    const {
+        sortField: field,
+        sortDir: dir,
+        setSortField: onFieldChange,
+        setSortDir: onDirChange,
+    } = useFiltersStore(useShallow(selectSortControls))
 
     const combobox = useCombobox({ onDropdownClose: () => combobox.resetSelectedOption() })
     const activeLabel = FIELDS.find((f) => f.value === field)?.label ?? ''

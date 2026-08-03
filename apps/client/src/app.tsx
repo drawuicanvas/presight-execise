@@ -3,15 +3,8 @@ import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-qu
 import { useDebouncedValue } from '@mantine/hooks'
 import { fetchHobbies, fetchNationalities, fetchUsers, nextPageOffset } from './api/users-api'
 import { type FacetOption, toHobbyOption, toNationalityOption, type UserFilters } from './api/types'
-import {
-    selectHobbyIds,
-    selectNationalityCodes,
-    selectSearch,
-    selectSortDir,
-    selectSortField,
-    useFiltersStore,
-    useFiltersUrlSync,
-} from './store/filters-store'
+import { useShallow } from 'zustand/react/shallow'
+import { selectFilters, useFiltersStore, useFiltersUrlSync } from './store/filters-store'
 import { TextFilter } from './components/text-filter/text-filter'
 import { SortControls } from './components/sort-controls/sort-controls'
 import { FacetCombobox } from './components/facet-combobox/facet-combobox'
@@ -47,21 +40,14 @@ export function App() {
         [nationalitiesQuery.data],
     )
 
-    // One atomic selector per field: a selector returning an object would be a fresh reference on
-    // every store write, which zustand v5 no longer shallow-compares away.
-    const search = useFiltersStore(selectSearch)
-    const hobbyIds = useFiltersStore(selectHobbyIds)
-    const nationalityCodes = useFiltersStore(selectNationalityCodes)
-    const sortField = useFiltersStore(selectSortField)
-    const sortDir = useFiltersStore(selectSortDir)
+    // Composite selector, so useShallow is required: without it this object would be a new
+    // reference on every store write and re-render forever.
+    const filters = useFiltersStore(useShallow(selectFilters))
 
     // The API filters on a name prefix, so refetching on every keystroke would fire a request per
     // character. Debounce the value that reaches the query key, not the value in the input.
-    const [debouncedSearch] = useDebouncedValue(search, 300)
-    const query = useMemo<UserFilters>(
-        () => ({ search: debouncedSearch, hobbyIds, nationalityCodes, sortField, sortDir }),
-        [debouncedSearch, hobbyIds, nationalityCodes, sortField, sortDir],
-    )
+    const [debouncedSearch] = useDebouncedValue(filters.search, 300)
+    const query = useMemo<UserFilters>(() => ({ ...filters, search: debouncedSearch }), [filters, debouncedSearch])
 
     const usersQuery = useInfiniteQuery({
         queryKey: ['users', query],

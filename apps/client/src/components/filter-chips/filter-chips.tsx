@@ -1,11 +1,6 @@
 import type { FacetOption } from '../../api/types'
-import {
-    type FacetKind,
-    selectClearAll,
-    selectHobbyIds,
-    selectNationalityCodes,
-    useFiltersStore,
-} from '../../store/filters-store'
+import { useShallow } from 'zustand/react/shallow'
+import { type FacetKind, selectChips, useFiltersStore } from '../../store/filters-store'
 import styles from './filter-chips.module.scss'
 
 interface Chip {
@@ -26,11 +21,13 @@ function labelOf(options: FacetOption[], value: string): string {
 }
 
 export function FilterChips({ hobbyOptions, nationalityOptions }: FilterChipsProps) {
-    const hobbyIds = useFiltersStore(selectHobbyIds)
-    const nationalityCodes = useFiltersStore(selectNationalityCodes)
-    const toggleHobby = useFiltersStore((s) => s.toggleHobby)
-    const toggleNationality = useFiltersStore((s) => s.toggleNationality)
-    const onClearAll = useFiltersStore(selectClearAll)
+    const {
+        hobbyIds,
+        nationalityCodes,
+        toggleHobby,
+        toggleNationality,
+        clearAll: onClearAll,
+    } = useFiltersStore(useShallow(selectChips))
 
     const chips: Chip[] = [
         ...hobbyIds.map((id) => ({
