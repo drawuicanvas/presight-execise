@@ -18,6 +18,29 @@ needs no volume, no init container, and no external database.
 
 ---
 
+## How the two containers talk
+
+nginx serves the client **and** reverse-proxies `/api` to the server:
+
+```
+browser ──► nginx :8086 ──┬── /            static assets
+                          └── /api/*  ───► server :3030   (/api prefix stripped)
+```
+
+Two consequences worth understanding, because they are why the setup is configured the way it is:
+
+- **The browser only ever talks to one origin**, so there are no cross-origin requests and
+  **CORS is not involved at all**. The server's `CORS_ORIGIN` is irrelevant to this deployment.
+- **Nothing about the deployment is compiled into the client bundle.** It requests the relative
+  path `/api`, so the same image runs in dev, staging and production unchanged. There are
+  deliberately **no `VITE_*` build arguments**.
+
+The API address is a _runtime_ setting (`API_UPSTREAM`) read by nginx when the container starts —
+which is exactly the flexibility a Vite bundle cannot have, since Vite inlines `import.meta.env` at
+build time.
+
+---
+
 ## Quick start
 
 ```bash
@@ -25,107 +48,74 @@ docker compose up --build
 ```
 
 - Client → <http://localhost:8086>
-- API → <http://localhost:3030>
+- API through the proxy → <http://localhost:8086/api/hobbies>
+- API directly (debugging only) → <http://localhost:3030>
 
 Tear down with `docker compose down`.
 
-If either port is taken, override both — they are wired into `CORS_ORIGIN` and
-`VITE_API_BASE_URL` too, so the pairing stays correct:
+If either port is taken, override it. **No rebuild is needed** — ports are runtime-only:
 
 ```bash
-WEB_PORT=8090 API_PORT=3031 docker compose up --build
+WEB_PORT=8090 API_PORT=3031 docker compose up
 ```
-
-> Changing `API_PORT` **requires a rebuild**, not just a restart. See
-> [build-time vs runtime](#build-time-vs-runtime) below.
 
 ---
 
 ## Environment variables
 
-### Build-time vs runtime
+### Client image — runtime
 
-This is the one thing that catches people out.
+| Variable                | Default in image | Purpose                                                             |
+| ----------------------- | ---------------- | ------------------------------------------------------------------- |
+| `API_UPSTREAM`          | `server:3030`    | `host:port` nginx proxies `/api` to. Resolved on the Docker network |
+| `NGINX_ENVSUBST_FILTER` | `^API_UPSTREAM$` | Restricts substitution so nginx's own `$host` etc. survive          |
 
-**The client has no runtime configuration at all.** Vite inlines `import.meta.env` into the
-JavaScript bundle when it compiles, so `VITE_API_BASE_URL` is frozen into the built assets. Setting
-it on the running container does nothing — nginx is just serving static files that already contain
-the URL. Pointing the client at a different API means **rebuilding the image**.
+Unlike `VITE_API_BASE_URL`, `API_UPSTREAM` is resolved **by nginx inside the network**, not by the
+browser. A compose service name such as `server:3030` is correct here — and is what you want.
 
-The server is the opposite: every one of its variables is read at startup from the real process
-environment, so it is configured normally with `-e` / `environment:`.
+### Client image — build arguments
 
-### Client — build arguments
+None. That is the point of this design.
 
-Passed with `--build-arg`, or `build.args` in compose.
+`NODE_IMAGE` (`node:26-slim`) and `PNPM_VERSION` (`11.8.0`) exist on the shared base stage for
+reproducibility, but nothing environment-specific is baked in.
 
-| Argument            | Default                 | Purpose                                        |
-| ------------------- | ----------------------- | ---------------------------------------------- |
-| `VITE_API_BASE_URL` | `http://localhost:3030` | Base URL of the API, no trailing slash         |
-| `NODE_IMAGE`        | `node:26-slim`          | Build/runtime base image                       |
-| `PNPM_VERSION`      | `11.8.0`                | Pinned via corepack so builds are reproducible |
+### Server image — runtime
 
-`VITE_API_BASE_URL` is resolved **by the browser**, not by the container. It must therefore be an
-address the user's machine can reach — the published host port or a public hostname. A compose
-service name such as `http://server:3030` resolves only inside the Docker network and will fail
-for every real visitor.
-
-### Server — runtime environment
-
-| Variable        | Default in image        | Purpose                                                       |
-| --------------- | ----------------------- | ------------------------------------------------------------- |
-| `NODE_ENV`      | `production`            | Set by the Dockerfile                                         |
-| `PORT`          | `3030`                  | Port the API listens on inside the container                  |
-| `DATABASE_FILE` | `data/user_data.db`     | SQLite file, relative to the app root. Baked in at build time |
-| `CORS_ORIGIN`   | `http://localhost:5175` | Comma-separated allowlist of browser origins; `*` allows any  |
-
-**`CORS_ORIGIN` must be set for any real deployment.** Its default targets the local Vite dev
-server, so a containerised client on port 8086 is _not_ allowed and every request the browser makes
-will be blocked. Set it to the origin the client is served from.
-
-### A working pair
-
-For the two services to talk, two settings must agree:
-
-```
-client build arg   VITE_API_BASE_URL = http://localhost:3030   ─┐ must point at
-server runtime env PORT              = 3030                    ─┘ the published API port
-
-client is served from  http://localhost:8086                   ─┐ must be listed
-server runtime env CORS_ORIGIN = http://localhost:8086          ─┘ in the allowlist
-```
-
-`docker-compose.yml` derives all four from `WEB_PORT` and `API_PORT` so they cannot drift.
+| Variable        | Default in image        | Purpose                                                                                                          |
+| --------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `NODE_ENV`      | `production`            | Set by the Dockerfile                                                                                            |
+| `PORT`          | `3030`                  | Port the API listens on inside the container                                                                     |
+| `DATABASE_FILE` | `data/user_data.db`     | SQLite file, relative to the app root. Baked in at build time                                                    |
+| `CORS_ORIGIN`   | `http://localhost:5175` | **Not used in this topology.** Only matters if a browser calls this port directly instead of going through nginx |
 
 ---
 
 ## Building and running without compose
 
 ```bash
-# Server
+# Server — on a shared network so the client can resolve it by name
+docker network create presight
 docker build --target pseserver -t presight-server .
-docker run --rm -p 3030:3030 \
-  -e CORS_ORIGIN=http://localhost:8086 \
-  presight-server
+docker run -d --name server --network presight presight-server
 
-# Client — the API URL must be supplied at BUILD time
-docker build --target pseclient -t presight-client \
-  --build-arg VITE_API_BASE_URL=http://localhost:3030 .
-docker run --rm -p 8086:8086 presight-client
+# Client — no build args, ever
+docker build --target pseclient -t presight-client .
+docker run -d --network presight -p 8086:8086 \
+  -e API_UPSTREAM=server:3030 \
+  presight-client
 ```
 
 ### Deploying to a real host
 
-Substitute real origins on both sides:
+The same two images, unmodified. Only `API_UPSTREAM` changes, and only if the API moves:
 
 ```bash
-docker build --target pseclient -t presight-client \
-  --build-arg VITE_API_BASE_URL=https://api.example.com .
-
-docker run -d -p 3030:3030 \
-  -e CORS_ORIGIN=https://app.example.com \
-  presight-server
+docker run -d -p 8086:8086 -e API_UPSTREAM=api.internal:3030 presight-client
 ```
+
+Because the client is origin-agnostic, putting it behind a TLS terminator or an ingress needs no
+rebuild — serve it at any hostname and `/api` follows along.
 
 ---
 
@@ -134,40 +124,40 @@ docker run -d -p 3030:3030 \
 With the stack up, these are the checks worth running. Substitute your ports.
 
 ```bash
-# 1. containers are up and healthy
+# 1. containers are up
 docker compose ps
 
-# 2. the API answers
-curl -i http://localhost:3030/hobbies          # 200, 30 items
-curl -i http://localhost:3030/nationalities    # 200, 51 items
-curl -s "http://localhost:3030/users?pagesize=1" | head -c 300
+# 2. nginx rendered the template with the runtime upstream
+docker compose exec client grep -A1 'location /api/' /etc/nginx/conf.d/default.conf
+#   -> proxy_pass http://server:3030/;
 
-# 3. the database really is inside the image
+# 3. the API answers through the proxy, same origin as the client
+curl -o /dev/null -w '%{http_code}\n' http://localhost:8086/api/hobbies         # 200, 30 items
+curl -o /dev/null -w '%{http_code}\n' http://localhost:8086/api/nationalities   # 200, 51 items
+curl -s "http://localhost:8086/api/users?pagesize=1" | head -c 300
+
+# 4. query strings survive the prefix strip
+curl -s "http://localhost:8086/api/users?first_name=sa&orderby=age&sort=desc&pagesize=3"
+#   -> 191 total, ages descending
+
+# 5. the database really is inside the image
 docker compose exec server ls -la data/
 #   -> user_data.db, ~880 KB
 
-# 4. CORS allows the client's origin and nothing else
-curl -sD- -o /dev/null -H "Origin: http://localhost:8086" http://localhost:3030/hobbies \
-  | grep -i access-control-allow-origin
-#   -> Access-Control-Allow-Origin: http://localhost:8086
-
-curl -sD- -o /dev/null -H "Origin: http://evil.example" http://localhost:3030/hobbies \
-  | grep -i access-control-allow-origin
-#   -> no output; the browser would block this origin
-
-# 5. nginx serves the client
-curl -o /dev/null -w '%{http_code}\n' http://localhost:8086/
-
-# 6. the bundle really was built against the API URL you passed
+# 6. no absolute API origin is compiled into the bundle
 docker compose exec client sh -c \
-  "grep -ohE 'http://localhost:[0-9]+' /usr/share/nginx/html/assets/*.js | sort -u"
-#   -> must match VITE_API_BASE_URL. If it shows a different port, the image
-#      was built with the wrong build-arg — restarting will not fix it.
+  "grep -ohE 'https?://[a-zA-Z0-9.:-]+' /usr/share/nginx/html/assets/*.js | sort -u"
+#   -> only library/doc URLs (json-schema.org, react.dev, ...). If a localhost or
+#      environment hostname appears here, something reintroduced a VITE_API_BASE_URL.
+
+# 7. nginx serves the SPA with sane caching
+curl -sD- -o /dev/null http://localhost:8086/index.html | grep -i cache-control
+#   -> no-store  (else a redeploy serves links to deleted asset hashes)
+curl -sD- -o /dev/null http://localhost:8086/assets/<hashed>.js | grep -i cache-control
+#   -> public, immutable
 ```
 
-Then open the client in a browser and confirm the user list loads, filters apply, and the URL
-updates as you filter. If the page renders but the list shows an error, it is almost always
-step 4 or step 6.
+Then open the client and confirm the list loads, filters apply, and the URL updates as you filter.
 
 ```bash
 docker compose logs -f server
@@ -177,28 +167,27 @@ docker compose logs -f server
 
 ## Troubleshooting
 
-**`Bind for 0.0.0.0:3030 failed: port is already allocated`**
-Something else — often another container — holds the port. Find it with
-`docker ps --format 'table {{.Names}}\t{{.Ports}}'`, then either stop it or use
-`WEB_PORT`/`API_PORT`. Port `3000` in particular is frequently claimed by Docker Desktop and other
-tooling.
+**`Bind for 0.0.0.0:8086 failed: port is already allocated`**
+Find the holder with `docker ps --format 'table {{.Names}}\t{{.Ports}}'`, then stop it or set
+`WEB_PORT`/`API_PORT`. No rebuild required.
 
-**The page loads but every request fails**
-CORS. The server's `CORS_ORIGIN` does not list the origin serving the client. Check the browser
-console for a CORS error and compare against verification step 4.
+**`502 Bad Gateway` on `/api/*`**
+nginx cannot reach the server. Check `API_UPSTREAM` matches the server's service name and internal
+port, that both containers share a network, and that the server is actually up
+(`docker compose logs server`).
 
-**Requests go to the wrong port**
-The client image was built with the wrong `VITE_API_BASE_URL`. It is compiled in — rebuild with
-the correct `--build-arg`. Verification step 6 confirms which URL is actually in the bundle.
+**`404` on `/api/*` but the server is healthy**
+The prefix strip depends on the trailing slash in `proxy_pass http://${API_UPSTREAM}/;`. Remove
+that slash and nginx forwards `/api/users` verbatim, which the server does not serve.
 
 **Client shows a blank page**
-Check `docker compose logs client`. If nginx is fine, the `app-build` stage probably produced an
+Check `docker compose logs client`. If nginx is fine, the `app-build` stage likely produced an
 empty `dist/`; rebuild with `--progress=plain --no-cache` and read the client build step.
 
 **Schema changes are not reflected**
 `pnpm-workspace.yaml` sets `injectWorkspacePackages: true`, so consumers receive a copy of
-`@presight/schema` made at install time. The Dockerfile handles this by installing, building the
-schema, then installing again — do not remove that second `pnpm install`.
+`@presight/schema` made at install time. The Dockerfile installs, builds the schema, then installs
+again — do not remove that second `pnpm install`.
 
 ---
 
@@ -210,5 +199,7 @@ schema, then installing again — do not remove that second `pnpm install`.
   there is no transpile step in the final stage.
 - **pnpm is pinned** through corepack rather than floating, so a build today and a build in six
   months resolve the same package manager.
-- **`.dockerignore` excludes `apps/server/data/`**, so a local development database is never
-  copied into the image — it is always rebuilt from the CSV.
+- **`.dockerignore` excludes `apps/server/data/`**, so a local development database is never copied
+  into the image — it is always rebuilt from the CSV.
+- **Publishing the API port is optional.** The client does not use it; it exists so you can curl the
+  API while debugging. Drop the `ports:` entry on `server` to keep it internal.

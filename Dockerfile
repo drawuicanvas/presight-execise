@@ -21,13 +21,9 @@ RUN npm install -g corepack && corepack enable && corepack prepare pnpm@${PNPM_V
 
 FROM base AS app-build
 
-# Vite inlines import.meta.env at build time, so the client's API base URL is frozen into the
-# JS bundle here. It CANNOT be changed later with an env var on the running container — pointing
-# the client somewhere else means rebuilding with a different value.
-# This URL is resolved by the browser, so it must be reachable from the host, not from inside
-# the compose network (http://localhost:3030, never http://server:3030).
-ARG VITE_API_BASE_URL=http://localhost:3030
-ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+# Deliberately no VITE_* build args: the client calls the API at the relative path /api, which
+# nginx proxies. Nothing about the deployment is compiled into the bundle, so this image is
+# identical for every environment and the API address stays a runtime setting.
 
 COPY . .
 
@@ -55,7 +51,17 @@ RUN cd /presight-exercise-server && pnpm run init:prod
 FROM nginx:alpine AS pseclient
 
 COPY --from=app-build /app/apps/client/dist /usr/share/nginx/html
-RUN sed -i 's/listen\s\+80;/listen 8086;/' /etc/nginx/conf.d/default.conf
+
+# Our server block replaces the stock one: it listens on 8086 and proxies /api to the API
+# container, which keeps the browser same-origin and removes the need for CORS entirely.
+RUN rm /etc/nginx/conf.d/default.conf
+COPY apps/client/nginx.conf.template /etc/nginx/templates/default.conf.template
+
+# Where the API lives, resolved when the container starts rather than when the image is built.
+# The filter restricts envsubst to this one name so nginx's own $variables are left alone.
+ENV API_UPSTREAM=server:3030
+ENV NGINX_ENVSUBST_FILTER=^API_UPSTREAM$
+
 
 EXPOSE 8086
 

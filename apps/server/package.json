@@ -7,9 +7,8 @@
     "scripts": {
         "dev": "node --watch --env-file-if-exists=.env src/index.ts 200",
         "start": "node src/index.ts",
-        "typecheck": "tsc --noEmit --watch",
-        "tt": "tsc",
-        "build": "node build.js",
+        "typecheck:watch": "tsc --watch",
+        "typecheck": "tsc",
         "data:seed": "node scripts/seed-data-to-sqlite-db.ts",
         "data:create-fresh": "node scripts/generate-data.ts && pnpm run data:seed",
         "init:dev": "node scripts/init-env.ts && node --env-file-if-exists=.env scripts/seed-data-to-sqlite-db.ts",

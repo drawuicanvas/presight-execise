@@ -39,9 +39,13 @@ pnpm --filter=@presight/client dev     # http://localhost:5175
 
 Open <http://localhost:5175>.
 
-> **If the client loads but every request fails**, the two ports have drifted apart. The client
-> calls the API directly (no dev proxy), so the server must allow the client's origin — see
-> [Environment variables](#environment-variables).
+The client requests the relative path `/api`, which Vite proxies to the server. Both apps are
+therefore one origin as far as the browser is concerned — no CORS, and no URL to keep in sync. If
+port 3000 is taken, point the proxy elsewhere:
+
+```bash
+API_PROXY_TARGET=http://localhost:3001 pnpm --filter=@presight/client dev
+```
 
 ---
 
@@ -127,29 +131,36 @@ production configuration should come from the environment, not a file in the ima
 
 ### Client — `apps/client/.env`
 
-| Variable            | Default                 | Purpose                    |
-| ------------------- | ----------------------- | -------------------------- |
-| `VITE_API_BASE_URL` | `http://localhost:3000` | Base URL of the API server |
+Both are optional; the defaults are what you want.
 
-**This is a build-time value.** Vite inlines `import.meta.env` into the bundle, so changing it
-requires rebuilding the client — setting it on a running container has no effect. This matters
-for Docker; see [docs/DOCKER.md](docs/DOCKER.md).
+| Variable            | Default                 | Purpose                                                     |
+| ------------------- | ----------------------- | ----------------------------------------------------------- |
+| `API_PROXY_TARGET`  | `http://localhost:3000` | Where the **dev server** forwards `/api`. Node-side only    |
+| `VITE_API_BASE_URL` | _(unset)_ → `/api`      | Set only to bypass the proxy and call another origin direct |
 
-### Keeping the two in sync
+`API_PROXY_TARGET` is read by `vite.config.ts` in Node, so it is a normal runtime variable.
+`VITE_API_BASE_URL` is different: Vite **inlines** `import.meta.env` into the bundle, so it is a
+build-time value that cannot be changed on a running container. Leaving it unset is what keeps one
+build runnable in every environment — see [docs/DOCKER.md](docs/DOCKER.md).
 
-The client calls the API cross-origin, so two settings must agree:
+### Why CORS is usually not involved
 
-- the client's `VITE_API_BASE_URL` must point at the server's `PORT`
-- the server's `CORS_ORIGIN` must list the origin the client is served from
+The client calls `/api` on its own origin. A proxy forwards it — Vite in development, nginx in the
+container — and strips the prefix, since the server serves its routes at the root:
 
-Defaults are already consistent (client on 5175, API on 3000). Change one and you must change the
-other, or the browser blocks every request.
+```
+/api/users?first_name=mo   ──proxy──►   /users?first_name=mo
+```
+
+So the browser makes no cross-origin request and `CORS_ORIGIN` never comes into play. It matters
+only if you set `VITE_API_BASE_URL` to an absolute URL and call the API directly; then that origin
+must appear in the server's allowlist.
 
 > **Port 3000 is a common conflict** — Docker Desktop and other tooling like to claim it. If
-> something else holds it, set `PORT` and `VITE_API_BASE_URL` to a free port. Note that a process
-> bound to the IPv6 wildcard and one bound to IPv4 `127.0.0.1` can hold "the same" port
-> simultaneously, which looks baffling: the server appears to start fine, but requests reach the
-> other program.
+> something else holds it, set the server's `PORT` and the client's `API_PROXY_TARGET` to match.
+> Note that a process bound to the IPv6 wildcard and one bound to IPv4 `127.0.0.1` can hold "the
+> same" port simultaneously, which looks baffling: the server appears to start fine, but requests
+> reach the other program.
 
 ---
 
@@ -220,5 +231,7 @@ Run `pnpm --filter=@presight/schema build`.
 compiler API that `vite-plugin-dts` needs. `@typescript/typescript6` is installed alongside to
 provide it; if it goes missing, reinstall.
 
-**Every API request fails in the browser** — check the CORS pairing above, and confirm the API is
-actually the process answering on that port.
+**Every API request fails in the browser** — the dev proxy cannot reach the server. Confirm the
+API is running, and that `API_PROXY_TARGET` points at the process actually answering on that port.
+A `404` on `/api/...` usually means the client is bypassing the proxy because `VITE_API_BASE_URL`
+is set in a local `.env`.

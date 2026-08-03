@@ -11,8 +11,15 @@ import {
 } from '@presight/schema'
 import type { UserFilters } from './types'
 
-/** The API server is called directly, so it must allow this origin (see the server's CORS_ORIGIN). */
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000'
+/**
+ * Same-origin by default: Vite proxies `/api` in dev, nginx proxies it in the container. A relative
+ * base means nothing about the deployment is compiled into the bundle, so one build runs anywhere
+ * and no cross-origin request is ever made.
+ *
+ * Setting VITE_API_BASE_URL to an absolute URL opts back into calling another origin directly, in
+ * which case that origin must be listed in the server's CORS_ORIGIN.
+ */
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '/api'
 
 export const PAGE_SIZE = Math.min(40, MAX_PAGE_SIZE)
 
