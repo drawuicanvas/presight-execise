@@ -1,0 +1,54 @@
+.root {
+  display: flex;
+  transform: var(--skew);
+}
+
+.selectWrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid var(--c-yellow);
+  color: var(--c-yellow);
+  cursor: pointer;
+}
+
+.prefix {
+  font: 800 12px var(--font);
+  letter-spacing: 1px;
+}
+
+.select {
+  appearance: none;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--c-yellow);
+  font: 800 12px var(--font);
+  letter-spacing: 1px;
+  padding: 11px 0;
+  cursor: pointer;
+
+  option { background: var(--c-popover); color: var(--c-text); }
+}
+
+.dirGroup {
+  display: flex;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-left: none;
+}
+
+.dirBtn {
+  appearance: none;
+  background: transparent;
+  border: none;
+  padding: 11px 12px;
+  font: 800 12px var(--font);
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+
+  &[data-active] {
+    background: var(--c-pink);
+    color: #fff;
+  }
+}

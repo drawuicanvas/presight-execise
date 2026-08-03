@@ -1,16 +1,22 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { App } from './App.tsx'
-import './index.css'
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { HeadlessMantineProvider } from '@mantine/core';
+import { App } from './app';
+import './styles/global.scss';
 
-const container = document.getElementById('root')
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { staleTime: 30_000, retry: 1 },
+  },
+});
 
-if (!container) {
-    throw new Error('Root container #root was not found')
-}
-
-createRoot(container).render(
-    <StrictMode>
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <HeadlessMantineProvider>
         <App />
-    </StrictMode>,
-)
+      </HeadlessMantineProvider>
+    </QueryClientProvider>
+  </React.StrictMode>,
+);
