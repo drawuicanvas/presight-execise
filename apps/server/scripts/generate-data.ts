@@ -5,6 +5,10 @@ import { CSV_FILE, CSV_HEADER, HOBBIES, HOBBY_SEPARATOR, NATIONALITIES } from '.
 const USER_COUNT = 1000
 const MAX_HOBBIES_PER_USER = 10
 
+/** Age bounds for generated users. Kept as named constants so the range is stated in one place. */
+const MIN_AGE = 16
+const MAX_AGE = 90
+
 /** First names with common prefixes for search testing. */
 const FIRST_NAMES = [
     // "Mo" prefix (20 names)
@@ -317,7 +321,7 @@ function generateUserRow(): string {
         faker.image.avatar(),
         firstName,
         lastName,
-        String(faker.number.int({ min: 0, max: 120 })),
+        String(faker.number.int({ min: MIN_AGE, max: MAX_AGE })),
         nationalityCode,
         hobbies.join(HOBBY_SEPARATOR),
     ]
