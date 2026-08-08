@@ -71,6 +71,21 @@ If either port is taken, override it. **No rebuild is needed** — ports are run
 WEB_PORT=8090 API_PORT=3031 docker compose up
 ```
 
+| Variable      | Default | What it controls                                   |
+| ------------- | ------- | -------------------------------------------------- |
+| `WEB_PORT`    | `8086`  | Host port the client is served on                  |
+| `API_PORT`    | `3030`  | Host port the API is published on (debugging only) |
+| `SERVER_PORT` | `3030`  | Port the API listens on **inside** the container   |
+
+`SERVER_PORT` is the interesting one: a single value feeds the server's `PORT`, the container side
+of the published mapping, and the client's `API_UPSTREAM`, so nginx always proxies to wherever the
+server actually is.
+
+```bash
+SERVER_PORT=4300 API_PORT=4301 WEB_PORT=8086 docker compose up -d
+#   -> nginx renders  proxy_pass http://server:4300/;
+```
+
 ---
 
 ## Environment variables
@@ -92,12 +107,21 @@ None. That is the point of this design.
 `NODE_IMAGE` (`node:26-slim`) and `PNPM_VERSION` (`11.8.0`) exist on the shared base stage for
 reproducibility, but nothing environment-specific is baked in.
 
+### Server image — build argument
+
+| Argument      | Default | Purpose                                                    |
+| ------------- | ------- | ---------------------------------------------------------- |
+| `SERVER_PORT` | `3030`  | Sets both `ENV PORT` and `EXPOSE`, so the two cannot drift |
+
+Only the _default_ is baked in — `docker run -e PORT=4200` still wins at run time. The build arg
+exists so the `EXPOSE` metadata matches whatever port the image actually listens on.
+
 ### Server image — runtime
 
 | Variable        | Default in image        | Purpose                                                                                                          |
 | --------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `NODE_ENV`      | `production`            | Set by the Dockerfile                                                                                            |
-| `PORT`          | `3030`                  | Port the API listens on inside the container                                                                     |
+| `PORT`          | `3030`                  | Port the API listens on inside the container. Defaults from the `SERVER_PORT` build arg, overridable at run time |
 | `DATABASE_FILE` | `data/user_data.db`     | SQLite file, relative to the app root. Baked in at build time                                                    |
 | `CORS_ORIGIN`   | `http://localhost:5175` | **Not used in this topology.** Only matters if a browser calls this port directly instead of going through nginx |
 

@@ -73,9 +73,13 @@ FROM ${NODE_IMAGE} AS pseserver
 WORKDIR /app
 COPY --from=app-build /presight-exercise-server ./
 
+# Single source for the port the API listens on inside the container. ENV feeds the server (see
+# apps/server/src/env.ts) and EXPOSE records it as image metadata, so the two cannot drift.
+# Still overridable at run time with `-e PORT=...`; the build arg only changes the default.
+ARG SERVER_PORT=3030
 ENV NODE_ENV=production
-ENV PORT=3030
+ENV PORT=${SERVER_PORT}
 
-EXPOSE 3030
+EXPOSE ${SERVER_PORT}
 
 CMD ["node", "src/index.ts"]
