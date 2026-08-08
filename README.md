@@ -3,6 +3,8 @@
 A searchable, filterable directory of 1,000 users. Server-side search, filtering, sorting and
 pagination over SQLite; a virtualised React client with live facet counts.
 
+- Running locally for development: **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**
+- How the workspace is structured: **[docs/WORKSPACE.md](docs/WORKSPACE.md)**
 - The brief this was built against: **[docs/EXERCISE.md](docs/EXERCISE.md)**
 - Running the production images: **[docs/DOCKER.md](docs/DOCKER.md)**
 
@@ -26,85 +28,6 @@ Open <http://localhost:8086> to view the app. Tear down with `docker compose dow
 `-d` runs detached so the command returns immediately instead of blocking your terminal streaming
 logs; use `docker compose logs -f` to reattach to them. See [docs/DOCKER.md](docs/DOCKER.md) for
 port overrides, the two image targets, and how the client talks to the API.
-
----
-
-## Requirements
-
-| Tool | Version    | Notes                                                           |
-| ---- | ---------- | --------------------------------------------------------------- |
-| Node | **>= 26**  | Uses the built-in `node:sqlite` and native TypeScript execution |
-| pnpm | **11.8.0** | `corepack enable` picks the right version up automatically      |
-| nx   | 23.x       | Task runner; `nx.json` sets `build.dependsOn: ["^build"]`       |
-
-The server runs `.ts` files directly and has **no build step at all** — see
-[Why the server never builds](#why-the-server-never-builds).
-
----
-
-## Getting started
-
-```bash
-pnpm install
-
-# creates apps/server/.env from .env.example and seeds the SQLite database
-pnpx nx init:dev @presight/server
-```
-
-Then run the two apps in separate terminals:
-
-```bash
-pnpx nx dev @presight/server     # http://localhost:3000
-pnpx nx dev @presight/client     # http://localhost:5175
-```
-
-Open <http://localhost:5175>.
-
-Both `dev` targets declare `dependsOn: ["^build"]` in `nx.json`, so nx builds `@presight/schema`
-first — there is no separate step to remember.
-
-The client requests the relative path `/api`, which Vite proxies to the server. Both apps are
-therefore one origin as far as the browser is concerned — no CORS, and no URL to keep in sync. If
-port 3000 is taken, point the proxy elsewhere:
-
-```bash
-API_PROXY_TARGET=http://localhost:3001 pnpx nx dev @presight/client
-```
-
----
-
-## Workspace layout
-
-```
-apps/
-  schema/   @presight/schema  zod schemas + inferred types, shared by client and server
-  server/   @presight/server  Express API over SQLite
-  client/   @presight/client  React + Vite front end
-```
-
-`@presight/schema` is the contract between the other two. Both the API's responses and the
-client's parsing of them come from the same zod schemas, so the wire format cannot drift from the
-types without something failing loudly.
-
-Consumers resolve it through a live symlink to `apps/schema`, so a rebuild is picked up
-immediately — but `dist/` has to exist and be current. After changing anything in `apps/schema`,
-rebuild it, or the other two keep compiling against the previous output:
-
-```bash
-pnpm --filter=@presight/schema build
-```
-
-nx does this for you when you build through it (`build.dependsOn: ["^build"]`).
-
-### Why the server never builds
-
-Node 26 strips TypeScript types natively, so `apps/server` runs its source directly —
-`node src/index.ts` in development, and the same command inside the container. There is nothing to
-transpile, so the package has no `build` script and `pnpm -r build` covers only schema and client.
-The Docker image ships the `.ts` files via `pnpm deploy --prod`.
-
-`apps/server/build.js` and the `esbuild` devDependency are leftovers from the removed step and can
-go.
 
 ---
 
